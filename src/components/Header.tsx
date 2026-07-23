@@ -17,24 +17,24 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-6 sm:gap-8">
           <div className="flex items-center gap-2.5">
-            <h1 className="font-serif-studio text-2xl sm:text-[26px] italic font-light tracking-wide text-ink">
-              FLARE<span className="font-semibold not-italic ml-1.5 text-xs sm:text-sm tracking-[0.3em] text-muted">STUDIO</span>
+            <h1 className="font-serif-studio text-3xl sm:text-[32px] italic font-light tracking-wide text-ink">
+              FLARE<span className="font-semibold not-italic ml-1.5 text-[17px] sm:text-[20px] tracking-[0.3em] text-muted">STUDIO</span>
             </h1>
-            <span className="hidden sm:inline-flex items-center rounded-full bg-gold/12 text-gold-dark border border-gold/30 text-[10px] uppercase font-semibold px-2.5 py-0.5 tracking-widest">
+            <span className="hidden sm:inline-flex items-center rounded-full bg-gold/12 text-gold-dark border border-gold/30 text-[15px] uppercase font-semibold px-2.5 py-0.5 tracking-widest">
               PRO 4K
             </span>
           </div>
 
-          <nav className="hidden md:flex gap-6 text-[10px] uppercase tracking-[0.2em] font-semibold">
+          <nav className="hidden xl:flex gap-6 text-[15px] uppercase tracking-[0.2em] font-semibold">
             <span className="text-ink border-b-2 border-gold pb-1">สตูดิโอ (Studio)</span>
             <span className="text-muted hover:text-ink border-b-2 border-transparent hover:border-line pb-1 transition-all cursor-pointer">พรีเซ็ต (Presets)</span>
             <span className="text-muted hover:text-ink border-b-2 border-transparent hover:border-line pb-1 transition-all cursor-pointer">ประมวลผลเป็นชุด (Batch Engine)</span>
           </nav>
         </div>
 
-        <div className="flex items-center gap-2.5 text-[10px] uppercase tracking-widest">
+        <div className="flex items-center gap-2.5 text-[15px] uppercase tracking-widest">
           {itemCount > 0 && (
-            <div className="hidden sm:inline-flex h-8 px-3.5 items-center bg-white border border-line rounded-full text-ink gap-1.5 shadow-sm">
+            <div className="hidden lg:inline-flex h-8 px-3.5 items-center bg-white border border-line rounded-full text-ink gap-1.5 shadow-sm">
               <Layers className="w-3.5 h-3.5 text-muted" />
               <span>ภาพทั้งหมด: {itemCount}</span>
               {completedCount > 0 && (
@@ -43,12 +43,12 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
-          <div className="hidden sm:inline-flex h-8 px-3.5 items-center bg-white border border-line rounded-full text-ink gap-1.5 shadow-sm">
+          <div className="hidden lg:inline-flex h-8 px-3.5 items-center bg-white border border-line rounded-full text-ink gap-1.5 shadow-sm">
             <Zap className="w-3.5 h-3.5 text-gold" />
             <span>Gemini 3.1 Flash Image</span>
           </div>
 
-          <div className={`inline-flex h-8 px-3.5 items-center rounded-full text-[10px] font-bold uppercase tracking-widest border gap-2 ${
+          <div className={`inline-flex h-8 px-3.5 items-center rounded-full text-[15px] font-bold uppercase tracking-widest border gap-2 ${
             hasApiKey
               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
               : 'bg-rose-50 text-rose-700 border-rose-200'

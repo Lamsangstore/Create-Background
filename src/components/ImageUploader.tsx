@@ -100,17 +100,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onAddImages }) => 
           </div>
 
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-ink">
+            <h3 className="text-[17px] font-bold uppercase tracking-[0.2em] text-ink">
               อัปโหลดรูปภาพสินค้า — ลากและวางไฟล์ที่นี่ (DRAG &amp; DROP)
             </h3>
-            <p className="text-[12px] text-muted mt-1.5">
+            <p className="text-[17px] text-muted mt-1.5">
               รองรับไฟล์หลายรูปพร้อมกัน (PNG, JPG, WEBP) สำหรับประมวลผลเปลี่ยนฉากหลัง AI เป็นชุด
             </p>
           </div>
 
           <button
             type="button"
-            className="btn btn-ink text-[10px] uppercase tracking-widest px-6 py-2.5"
+            className="btn btn-ink text-[15px] uppercase tracking-widest px-6 py-2.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>เลือกรูปภาพจากคอมพิวเตอร์ (SELECT FILES)</span>
@@ -122,7 +122,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onAddImages }) => 
       <div className="card p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-gold" />
-          <span className="text-[10px] uppercase tracking-widest text-muted font-semibold">
+          <span className="text-[15px] uppercase tracking-widest text-muted font-semibold">
             TEST SAMPLES (รูปสินค้าตัวอย่าง):
           </span>
         </div>
@@ -133,7 +133,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onAddImages }) => 
               key={idx}
               type="button"
               onClick={() => handleAddSample(sample)}
-              className="inline-flex items-center gap-2 rounded-full bg-white hover:bg-cream-2 border border-line hover:border-gold/40 px-3.5 py-1.5 text-[10px] uppercase tracking-widest text-ink transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-full bg-white hover:bg-cream-2 border border-line hover:border-gold/40 px-3.5 py-1.5 text-[15px] uppercase tracking-widest text-ink transition-all cursor-pointer"
             >
               <ImageIcon className="w-3.5 h-3.5 text-gold" />
               <span>{sample.name}</span>
