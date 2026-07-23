@@ -11,6 +11,7 @@ import { ImageUploader } from './components/ImageUploader';
 import { BatchImageList } from './components/BatchImageList';
 import { LightboxModal } from './components/LightboxModal';
 import { Stepper, StepHeader, StepStatus } from './components/Steps';
+import { ToneMatch } from './components/ToneMatch';
 import { sanitizeFileName } from './utils/filename';
 import { ProductImageItem, StudioConfig, StudioPreset } from './types';
 import { buildPrompt, buildReferencePrompt, createUserPreset, STUDIO_PRESETS } from './data/presets';
@@ -58,6 +59,9 @@ export default function App() {
 
   // Product name used as the base for downloaded file names (numbered when many).
   const [productName, setProductName] = useState('');
+
+  // Which top-level mode is showing: AI background studio, or the tone-match tool.
+  const [view, setView] = useState<'studio' | 'tone'>('studio');
 
   // Check health on mount
   useEffect(() => {
@@ -295,6 +299,7 @@ export default function App() {
   };
 
   const completedCount = items.filter((i) => i.status === 'completed').length;
+  const completedItemsList = items.filter((i) => i.status === 'completed' && !!i.resultUrl);
 
   // Step progress: style always has a default, so step 1 is done; step 2 done
   // once images are queued; step 3 done once at least one render completes.
@@ -315,6 +320,29 @@ export default function App() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+        {/* Mode Tabs */}
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-1 bg-white border border-line rounded-full p-1 shadow-sm">
+            {([
+              { id: 'studio', label: '✨ สร้างฉากหลัง AI' },
+              { id: 'tone', label: '🎨 ปรับโทนพื้นหลัง' },
+            ] as const).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setView(t.id)}
+                className={`px-5 py-2.5 rounded-full text-[15px] font-semibold transition-all cursor-pointer ${
+                  view === t.id ? 'bg-ink text-cream shadow-sm' : 'text-muted hover:text-ink'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ===== STUDIO VIEW ===== */}
+        <div className={view === 'studio' ? 'space-y-8' : 'hidden'}>
         {/* Banner Guidance */}
         <div className="card p-6 md:p-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden animate-rise">
           <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-gold/10 blur-3xl" />
@@ -395,6 +423,12 @@ export default function App() {
             </div>
           )}
         </section>
+        </div>
+
+        {/* ===== TONE MATCH VIEW ===== */}
+        <div className={view === 'tone' ? '' : 'hidden'}>
+          <ToneMatch completedItems={completedItemsList} onToast={showToast} />
+        </div>
       </main>
 
       {/* Lightbox High-Res Inspection Modal */}
