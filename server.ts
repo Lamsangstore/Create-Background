@@ -7,11 +7,12 @@ import { createServer as createViteServer } from "vite";
 // Load local secrets (GEMINI_API_KEY, etc.) from .env.local / .env for local dev.
 // In AI Studio / production these are injected at runtime, so missing files are fine.
 // Existing shell env vars are NOT overridden.
-dotenv.config({ path: [".env.local", ".env"] });
+dotenv.config({ path: [".env.local", ".env"], quiet: true });
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  // Hosts like Render/Cloud Run inject the port via env; fall back to 3000 locally.
+  const PORT = Number(process.env.PORT) || 3000;
 
   // Allow payload up to 50mb for multi-high-res image uploads
   app.use(express.json({ limit: "50mb" }));

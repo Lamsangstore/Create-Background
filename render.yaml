@@ -1,0 +1,17 @@
+# Render Blueprint — deploy this app from any device via the Render dashboard.
+# In Render: New + → Blueprint → connect this GitHub repo. Render reads this file,
+# builds in the cloud, and only asks you to paste the GEMINI_API_KEY secret.
+services:
+  - type: web
+    name: create-background
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false # Render prompts you to enter this secret in the dashboard
