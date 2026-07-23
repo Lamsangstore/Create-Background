@@ -40,6 +40,7 @@ export interface StudioPreset {
   promptTemplate: string;
   previewBgClass: string;
   previewImage: string; // Self-contained SVG data URL used as the card thumbnail
+  isUser?: boolean;     // True for presets the user saved from a custom prompt
 }
 
 export interface StudioConfig {

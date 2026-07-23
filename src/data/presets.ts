@@ -136,16 +136,37 @@ The {PRODUCT} must match the original image exactly.`
   }
 ];
 
-export function buildPrompt(presetId: string, customPrompt: string, isCustomActive: boolean, productType: ProductType): string {
+export function buildPrompt(presets: StudioPreset[], presetId: string, customPrompt: string, isCustomActive: boolean, productType: ProductType): string {
   if (isCustomActive && customPrompt.trim()) {
     return customPrompt.trim();
   }
 
-  const preset = STUDIO_PRESETS.find(p => p.id === presetId) || STUDIO_PRESETS[0];
+  const preset = presets.find(p => p.id === presetId) || presets[0] || STUDIO_PRESETS[0];
   const typeObj = PRODUCT_TYPES.find(t => t.id === productType) || PRODUCT_TYPES[0];
   const word = typeObj.promptWord || 'product';
 
   return preset.promptTemplate.replace(/\{PRODUCT\}/g, word);
+}
+
+/** Build a user-saved preset from a custom prompt so it can live in the grid. */
+export function createUserPreset(name: string, promptTemplate: string): StudioPreset {
+  const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return {
+    id,
+    titleTh: name,
+    titleEn: name,
+    descriptionTh: 'พรีเซ็ตที่คุณบันทึกเอง',
+    descriptionEn: 'Your saved custom preset',
+    badge: 'MY PRESET',
+    previewBgClass: '',
+    previewImage: generatePresetPreview({
+      bgFrom: '#efe7d9', bgTo: '#ddcbb0', surface: '#eaddc8',
+      product: '#c4ac88', productHi: '#fff2db',
+      glow: 'rgba(255,238,210,0.6)', reflection: 0.34,
+    }),
+    promptTemplate,
+    isUser: true,
+  };
 }
 
 /**
