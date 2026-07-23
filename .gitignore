@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Project uses bun (bun.lock); ignore npm's lockfile if generated locally
+package-lock.json
+
+# Machine-local Claude Code settings
+.claude/settings.local.json
