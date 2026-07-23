@@ -1,0 +1,161 @@
+import { GoogleGenAI } from "@google/genai";
+import express from "express";
+import path from "path";
+import { createServer as createViteServer } from "vite";
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  // Allow payload up to 50mb for multi-high-res image uploads
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // API Health Endpoint
+  app.get("/api/health", (req, res) => {
+    const hasKey = Boolean(process.env.GEMINI_API_KEY);
+    res.json({ status: "ok", hasApiKey: hasKey });
+  });
+
+  // AI Studio Product Background Replacement API Endpoint
+  app.post("/api/edit-image", async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({
+          error: "GEMINI_API_KEY_MISSING",
+          message: "ไม่พบคีย์ GEMINI_API_KEY กรุณาตรวจสอบการตั้งค่า Secrets",
+        });
+      }
+
+      const {
+        imageBase64,
+        mimeType = "image/png",
+        prompt,
+        aspectRatio = "1:1",
+        imageSize = "1K",
+        model = "gemini-3.1-flash-image",
+      } = req.body;
+
+      if (!imageBase64 || !prompt) {
+        return res.status(400).json({
+          error: "INVALID_REQUEST",
+          message: "กรุณาระบุภาพต้นแบบและคำสั่งสำหรับ AI",
+        });
+      }
+
+      // Strip data URI header if present
+      const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+
+      console.log(`[API /edit-image] Processing with model=${model}, size=${imageSize}, aspect=${aspectRatio}`);
+
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                data: cleanBase64,
+                mimeType: mimeType,
+              },
+            },
+            {
+              text: prompt,
+            },
+          ],
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: aspectRatio,
+            imageSize: imageSize,
+          },
+        },
+      });
+
+      let resultImageData: string | null = null;
+      let resultMimeType = "image/png";
+      let textFeedback = "";
+
+      const candidates = response.candidates;
+      if (candidates && candidates.length > 0 && candidates[0].content?.parts) {
+        for (const part of candidates[0].content.parts) {
+          if (part.inlineData && part.inlineData.data) {
+            resultImageData = part.inlineData.data;
+            if (part.inlineData.mimeType) {
+              resultMimeType = part.inlineData.mimeType;
+            }
+          } else if (part.text) {
+            textFeedback += part.text + " ";
+          }
+        }
+      }
+
+      if (!resultImageData) {
+        return res.status(500).json({
+          error: "GENERATION_EMPTY",
+          message: "AI ไม่ได้คืนค่าไฟล์รูปภาพกลับมา กรุณาลองใหม่อีกครั้งหรือปรับเปลี่ยน Prompt",
+          textFeedback: textFeedback.trim(),
+        });
+      }
+
+      return res.json({
+        success: true,
+        resultImage: `data:${resultMimeType};base64,${resultImageData}`,
+        mimeType: resultMimeType,
+        textFeedback: textFeedback.trim(),
+      });
+    } catch (error: any) {
+      console.error("[API Error /edit-image]:", error);
+
+      const errMessageStr = String(error?.message || "");
+      const isQuotaError = 
+        error?.status === 429 || 
+        errMessageStr.includes("429") || 
+        errMessageStr.includes("RESOURCE_EXHAUSTED") || 
+        errMessageStr.includes("Quota exceeded");
+
+      if (isQuotaError) {
+        return res.status(429).json({
+          error: "RATE_LIMIT_EXCEEDED",
+          isRateLimit: true,
+          message: "โควต้าการสร้างรูปภาพ AI ของ Gemini ชั่วคราวเกินขีดจำกัด (Rate Limit 429) กรุณารอประมาณ 30 วินาที แล้วลองใหม่อีกครั้ง",
+        });
+      }
+
+      return res.status(500).json({
+        error: "SERVER_ERROR",
+        message: error?.message || "เกิดข้อผิดพลาดในการประมวลผลรูปภาพด้วย AI",
+      });
+    }
+  });
+
+  // Serve Vite in dev, static files in prod
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server listening on http://0.0.0.0:${PORT}`);
+  });
+}
+
+startServer();
