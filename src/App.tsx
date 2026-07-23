@@ -10,8 +10,9 @@ import { PresetSelector } from './components/PresetSelector';
 import { ImageUploader } from './components/ImageUploader';
 import { BatchImageList } from './components/BatchImageList';
 import { LightboxModal } from './components/LightboxModal';
+import { Stepper, StepHeader, StepStatus } from './components/Steps';
 import { ProductImageItem, StudioConfig } from './types';
-import { buildPrompt, STUDIO_PRESETS } from './data/presets';
+import { buildPrompt, buildReferencePrompt, STUDIO_PRESETS } from './data/presets';
 import { Sparkles, AlertCircle, CheckCircle2, Info, Image as ImageIcon, Zap, ShieldCheck } from 'lucide-react';
 
 export default function App() {
@@ -29,6 +30,9 @@ export default function App() {
     productType: 'belt',
     customPrompt: '',
     isCustomPromptActive: false,
+    referenceImage: undefined,
+    referenceMimeType: undefined,
+    isReferenceActive: false,
   });
 
   // Check health on mount
@@ -66,12 +70,17 @@ export default function App() {
   };
 
   const processItemApi = async (item: ProductImageItem, currentConfig: StudioConfig): Promise<Partial<ProductImageItem>> => {
-    const promptToUse = buildPrompt(
-      currentConfig.selectedPresetId,
-      currentConfig.customPrompt,
-      currentConfig.isCustomPromptActive,
-      item.productType || currentConfig.productType
-    );
+    const effectiveType = item.productType || currentConfig.productType;
+    const useReference = Boolean(currentConfig.isReferenceActive && currentConfig.referenceImage);
+
+    const promptToUse = useReference
+      ? buildReferencePrompt(effectiveType)
+      : buildPrompt(
+          currentConfig.selectedPresetId,
+          currentConfig.customPrompt,
+          currentConfig.isCustomPromptActive,
+          effectiveType
+        );
 
     const response = await fetch('/api/edit-image', {
       method: 'POST',
@@ -79,6 +88,8 @@ export default function App() {
       body: JSON.stringify({
         imageBase64: item.originalUrl,
         mimeType: item.mimeType,
+        referenceImageBase64: useReference ? currentConfig.referenceImage : undefined,
+        referenceMimeType: useReference ? currentConfig.referenceMimeType : undefined,
         prompt: promptToUse,
         aspectRatio: currentConfig.aspectRatio,
         imageSize: currentConfig.imageSize,
@@ -168,7 +179,8 @@ export default function App() {
     if (!item.resultUrl) return;
     const a = document.createElement('a');
     a.href = item.resultUrl;
-    a.download = `Studio_Product_${item.id}_${item.imageSize || '1K'}.png`;
+    const ext = item.resultUrl.match(/^data:image\/([a-zA-Z]+);/)?.[1] || 'png';
+    a.download = `Studio_Product_${item.id}_${item.imageSize || '1K'}.${ext}`;
     a.click();
     showToast(`ดาวน์โหลดรูปภาพ "${item.name}" สำเร็จ`, 'success');
   };
@@ -186,9 +198,10 @@ export default function App() {
       completedItems.forEach((item, idx) => {
         if (!item.resultUrl) return;
         const base64Data = item.resultUrl.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
-        const ext = item.mimeType?.includes('png') ? 'png' : 'jpg';
+        const ext = item.resultUrl.match(/^data:image\/([a-zA-Z]+);/)?.[1] || 'png';
+        const sizeLabel = item.imageSize || '1K';
         const cleanName = item.name.replace(/[^a-zA-Z0-9_\u0E00-\u0E7F-]/g, '_');
-        const fileName = `${idx + 1}_${cleanName}_4K.${ext}`;
+        const fileName = `${idx + 1}_${cleanName}_${sizeLabel}.${ext}`;
         folder?.file(fileName, base64Data, { base64: true });
       });
 
@@ -220,8 +233,16 @@ export default function App() {
 
   const completedCount = items.filter((i) => i.status === 'completed').length;
 
+  // Step progress: style always has a default, so step 1 is done; step 2 done
+  // once images are queued; step 3 done once at least one render completes.
+  const stepDones = [true, items.length > 0, completedCount > 0];
+  const firstTodo = stepDones.findIndex((d) => !d);
+  const stepStatuses = stepDones.map((d, i) =>
+    d ? 'done' : i === firstTodo ? 'active' : 'todo'
+  ) as StepStatus[];
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-white selection:text-black pb-20">
+    <div className="min-h-screen text-ink selection:bg-gold/20 selection:text-ink pb-24">
       {/* Top Header */}
       <Header
         itemCount={items.length}
@@ -232,46 +253,80 @@ export default function App() {
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         {/* Banner Guidance */}
-        <div className="bg-[#0d0d0d] border border-white/10 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
-          <div className="space-y-1.5 relative z-10">
-            <div className="flex items-center space-x-2.5">
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <h2 className="font-serif-studio text-xl italic font-light tracking-wide text-white">
-                FLARE STUDIO — <span className="not-italic font-semibold text-xs tracking-[0.2em] text-white/80 uppercase">Professional AI Photography & Background Replacement</span>
+        <div className="card p-6 md:p-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden animate-rise">
+          <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-gold/10 blur-3xl" />
+          <div className="space-y-2 relative z-10">
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gold/12 text-gold">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <h2 className="font-serif-studio text-2xl italic font-light tracking-wide text-ink">
+                FLARE STUDIO — <span className="not-italic font-semibold text-[11px] tracking-[0.2em] text-muted uppercase">Professional AI Photography &amp; Background Replacement</span>
               </h2>
             </div>
-            <p className="text-xs text-white/60 leading-relaxed max-w-3xl">
+            <p className="text-[13px] text-muted leading-relaxed max-w-3xl">
               ระบบเปลี่ยนฉากหลังให้สินค้าด้วยโมเดล Gemini 3.1 Flash Image โดยรักษารูปลักษณ์สินค้าต้นแบบไว้ 100% พร้อมสร้างฉากหลังสตูดิโอสีขาว แสงขาวอุ่น และเงาสะท้อนระดับช่างภาพมืออาชีพ
             </p>
           </div>
 
-          <div className="shrink-0 flex items-center space-x-2 bg-white/5 border border-white/15 px-4 py-2 text-[10px] uppercase font-bold tracking-widest text-amber-300">
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+          <div className="relative z-10 shrink-0 inline-flex items-center gap-2 rounded-full bg-gold/10 border border-gold/30 px-4 py-2 text-[10px] uppercase font-bold tracking-widest text-gold-dark">
+            <ShieldCheck className="w-3.5 h-3.5" />
             <span>PRODUCT PRESERVED</span>
           </div>
         </div>
 
-        {/* Studio Preset & Config Panel */}
-        <PresetSelector
-          config={studioConfig}
-          onChange={setStudioConfig}
-        />
+        {/* Progress Stepper */}
+        <Stepper statuses={stepStatuses} />
 
-        {/* Image Dropzone & Sample Buttons */}
-        <ImageUploader onAddImages={handleAddImages} />
+        {/* STEP 1 — Studio Preset & Config Panel */}
+        <section className="space-y-4">
+          <StepHeader
+            step={1}
+            title="เลือกสไตล์ฉากหลัง & ตั้งค่าสตูดิโอ"
+            subtitle="เลือกพรีเซ็ต หรืออัปโหลดรูปอ้างอิง แล้วตั้งความละเอียดและสัดส่วนภาพ"
+          />
+          <PresetSelector
+            config={studioConfig}
+            onChange={setStudioConfig}
+          />
+        </section>
 
-        {/* Batch Image List */}
-        <BatchImageList
-          items={items}
-          isProcessingBatch={isProcessingBatch}
-          onProcessSingle={handleProcessSingle}
-          onProcessAll={handleProcessAll}
-          onDownloadSingle={handleDownloadSingle}
-          onDownloadZip={handleDownloadZip}
-          onRemoveSingle={handleRemoveSingle}
-          onClearAll={handleClearAll}
-          onOpenLightbox={(item) => setLightboxItem(item)}
-        />
+        {/* STEP 2 — Image Dropzone & Sample Buttons */}
+        <section className="space-y-4">
+          <StepHeader
+            step={2}
+            title="อัปโหลดรูปภาพสินค้า"
+            subtitle="ลากวางหรือเลือกไฟล์ อัปโหลดได้หลายรูปพร้อมกัน (PNG, JPG, WEBP)"
+          />
+          <ImageUploader onAddImages={handleAddImages} />
+        </section>
+
+        {/* STEP 3 — Batch Image List */}
+        <section className="space-y-4">
+          <StepHeader
+            step={3}
+            title="ประมวลผล & ดาวน์โหลด"
+            subtitle="กดเปลี่ยนฉากหลังทีละรูปหรือทั้งชุด แล้วดาวน์โหลดผลลัพธ์ความละเอียดสูง"
+          />
+          <BatchImageList
+            items={items}
+            isProcessingBatch={isProcessingBatch}
+            onProcessSingle={handleProcessSingle}
+            onProcessAll={handleProcessAll}
+            onDownloadSingle={handleDownloadSingle}
+            onDownloadZip={handleDownloadZip}
+            onRemoveSingle={handleRemoveSingle}
+            onClearAll={handleClearAll}
+            onOpenLightbox={(item) => setLightboxItem(item)}
+          />
+          {items.length === 0 && (
+            <div className="rounded-2xl border-2 border-dashed border-line p-8 text-center">
+              <p className="text-[12px] text-muted">
+                ยังไม่มีรูปในคิว — อัปโหลดรูปในขั้นตอนที่ 2 ก่อน แล้วผลลัพธ์จะแสดงที่นี่
+              </p>
+            </div>
+          )}
+        </section>
       </main>
 
       {/* Lightbox High-Res Inspection Modal */}
@@ -285,20 +340,20 @@ export default function App() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-bounce">
-          <div className={`flex items-center space-x-3 px-5 py-3.5 border backdrop-blur-md text-[11px] font-bold uppercase tracking-widest ${
+        <div className="fixed bottom-6 right-6 z-50 animate-rise">
+          <div className={`flex items-center gap-3 rounded-xl px-5 py-3.5 border bg-white shadow-studio-lg text-[12px] font-semibold tracking-wide ${
             toast.type === 'success'
-              ? 'bg-[#0d0d0d] border-emerald-500/60 text-emerald-300'
+              ? 'border-emerald-200 text-emerald-700'
               : toast.type === 'error'
-              ? 'bg-[#0d0d0d] border-rose-500/60 text-rose-300'
-              : 'bg-[#0d0d0d] border-white/20 text-white'
+              ? 'border-rose-200 text-rose-700'
+              : 'border-line text-ink'
           }`}>
             {toast.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             ) : toast.type === 'error' ? (
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
             ) : (
-              <Info className="w-4 h-4 text-amber-300 shrink-0" />
+              <Info className="w-4 h-4 text-gold shrink-0" />
             )}
             <span>{toast.message}</span>
           </div>
