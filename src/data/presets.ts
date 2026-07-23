@@ -1,4 +1,5 @@
 import { StudioPreset, ProductType } from '../types';
+import { generatePresetPreview } from '../utils/presetPreview';
 
 export const PRODUCT_TYPES: { id: ProductType; labelTh: string; labelEn: string; promptWord: string }[] = [
   { id: 'belt', labelTh: 'เข็มขัด (Belt)', labelEn: 'Belt', promptWord: 'belt' },
@@ -19,6 +20,11 @@ export const STUDIO_PRESETS: StudioPreset[] = [
     descriptionEn: 'Clean white studio background, soft warm lighting, natural surface shadow, and light floor reflection.',
     badge: 'ตามคำสั่งของคุณ',
     previewBgClass: 'from-slate-100 to-white border-amber-300',
+    previewImage: generatePresetPreview({
+      bgFrom: '#ffffff', bgTo: '#eceff3', surface: '#ffffff',
+      product: '#c3ccd6', productHi: '#f4f7fb',
+      glow: 'rgba(255,244,214,0.70)', reflection: 0.5,
+    }),
     promptTemplate: `Use the original image as is.
 Do NOT modify, recolor, reshape, or retouch the {PRODUCT} product in any way.
 Only replace the background.
@@ -39,6 +45,11 @@ The {PRODUCT} must remain exactly the same as the original image and be the clea
     descriptionEn: 'Dark slate background with subtle golden rim lighting and premium reflections.',
     badge: 'Luxury',
     previewBgClass: 'from-slate-900 to-slate-800 border-slate-700 text-white',
+    previewImage: generatePresetPreview({
+      bgFrom: '#263243', bgTo: '#0d141f', surface: '#1b2431',
+      product: '#2f3d4e', productHi: '#d9c38a',
+      glow: 'rgba(251,191,36,0.30)', reflection: 0.32,
+    }),
     promptTemplate: `Use the original image as is.
 Do NOT modify, recolor, reshape, or retouch the {PRODUCT} product in any way.
 Only replace the background.
@@ -59,6 +70,11 @@ The {PRODUCT} must remain exactly the same as the original image and be the prim
     descriptionEn: 'White marble surface with gentle warm window sunlight and subtle shadows.',
     badge: 'E-commerce Popular',
     previewBgClass: 'from-stone-100 to-stone-200 border-stone-300',
+    previewImage: generatePresetPreview({
+      bgFrom: '#f3efe7', bgTo: '#e2dccf', surface: '#f7f2e8',
+      product: '#d2cec6', productHi: '#fff4dd',
+      glow: 'rgba(255,216,150,0.60)', reflection: 0.42,
+    }),
     promptTemplate: `Use the original image as is.
 Do NOT modify, recolor, reshape, or retouch the {PRODUCT} product in any way.
 Only replace the background.
@@ -78,6 +94,11 @@ The {PRODUCT} must remain exactly identical to the original reference image.`
     descriptionEn: 'Minimalist cylinder pedestal with architectural shadows and soft studio light.',
     badge: 'Modern',
     previewBgClass: 'from-amber-50 to-orange-100 border-amber-200',
+    previewImage: generatePresetPreview({
+      bgFrom: '#f1e7d8', bgTo: '#e0cfb6', surface: '#ece0cd',
+      product: '#c8b193', productHi: '#fff2df',
+      glow: 'rgba(255,250,240,0.55)', reflection: 0.34,
+    }),
     promptTemplate: `Use the original image as is.
 Do NOT modify, recolor, reshape, or retouch the {PRODUCT} product in any way.
 Only replace the background.
@@ -97,6 +118,11 @@ The {PRODUCT} must remain untouched and be the focal point.`
     descriptionEn: 'Smooth warm oak wooden tabletop with soft natural fill light.',
     badge: 'Natural Craft',
     previewBgClass: 'from-amber-100 to-amber-200 border-amber-300',
+    previewImage: generatePresetPreview({
+      bgFrom: '#dcc5a6', bgTo: '#b98f63', surface: '#a06b39',
+      product: '#6f4a29', productHi: '#d9b58a',
+      glow: 'rgba(255,226,182,0.50)', reflection: 0.3,
+    }),
     promptTemplate: `Use the original image as is.
 Do NOT modify, recolor, reshape, or retouch the {PRODUCT} product in any way.
 Only replace the background.
@@ -120,4 +146,25 @@ export function buildPrompt(presetId: string, customPrompt: string, isCustomActi
   const word = typeObj.promptWord || 'product';
 
   return preset.promptTemplate.replace(/\{PRODUCT\}/g, word);
+}
+
+/**
+ * Prompt used when the user supplies a reference image: the model receives two
+ * images (Image 1 = product, Image 2 = reference) and must copy the reference's
+ * background scene and lighting onto the product while keeping the product intact.
+ */
+export function buildReferencePrompt(productType: ProductType): string {
+  const typeObj = PRODUCT_TYPES.find(t => t.id === productType) || PRODUCT_TYPES[0];
+  const word = typeObj.promptWord || 'product';
+
+  return `You are given TWO images.
+Image 1 is the product photo. Image 2 is a reference photo.
+
+Keep the ${word} from Image 1 exactly as is.
+Do NOT modify, recolor, reshape, resize, or retouch the ${word} in any way.
+
+Replace ONLY the background of Image 1 so that the background scene, environment, colors, materials, mood, and — most importantly — the lighting direction, softness, and color temperature closely match the reference in Image 2.
+Add a realistic contact shadow and a subtle floor reflection beneath the ${word}, consistent with the lighting in Image 2.
+
+The result must look like a single, seamless, professional product photograph, with the ${word} as the clear focal point.`;
 }

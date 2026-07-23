@@ -39,6 +39,7 @@ export interface StudioPreset {
   badge: string;
   promptTemplate: string;
   previewBgClass: string;
+  previewImage: string; // Self-contained SVG data URL used as the card thumbnail
 }
 
 export interface StudioConfig {
@@ -48,4 +49,7 @@ export interface StudioConfig {
   productType: ProductType;
   customPrompt: string;
   isCustomPromptActive: boolean;
+  referenceImage?: string;       // Base64 data URL of the reference background/lighting image
+  referenceMimeType?: string;
+  isReferenceActive?: boolean;   // When true, the reference image drives the background instead of a preset
 }

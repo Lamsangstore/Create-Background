@@ -1,7 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
+import dotenv from "dotenv";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
+
+// Load local secrets (GEMINI_API_KEY, etc.) from .env.local / .env for local dev.
+// In AI Studio / production these are injected at runtime, so missing files are fine.
+// Existing shell env vars are NOT overridden.
+dotenv.config({ path: [".env.local", ".env"] });
 
 async function startServer() {
   const app = express();
@@ -31,6 +37,8 @@ async function startServer() {
       const {
         imageBase64,
         mimeType = "image/png",
+        referenceImageBase64,
+        referenceMimeType = "image/png",
         prompt,
         aspectRatio = "1:1",
         imageSize = "1K",
@@ -56,22 +64,37 @@ async function startServer() {
         },
       });
 
-      console.log(`[API /edit-image] Processing with model=${model}, size=${imageSize}, aspect=${aspectRatio}`);
+      // Build the request parts. When a reference image is supplied it is sent as a
+      // second image so the model can match its background scene and lighting.
+      const parts: any[] = [
+        {
+          inlineData: {
+            data: cleanBase64,
+            mimeType: mimeType,
+          },
+        },
+      ];
+
+      if (referenceImageBase64) {
+        const cleanReference = referenceImageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
+        parts.push({
+          inlineData: {
+            data: cleanReference,
+            mimeType: referenceMimeType,
+          },
+        });
+      }
+
+      parts.push({ text: prompt });
+
+      console.log(
+        `[API /edit-image] Processing with model=${model}, size=${imageSize}, aspect=${aspectRatio}, reference=${Boolean(referenceImageBase64)}`
+      );
 
       const response = await ai.models.generateContent({
         model: model,
         contents: {
-          parts: [
-            {
-              inlineData: {
-                data: cleanBase64,
-                mimeType: mimeType,
-              },
-            },
-            {
-              text: prompt,
-            },
-          ],
+          parts: parts,
         },
         config: {
           imageConfig: {
