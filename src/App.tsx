@@ -11,8 +11,9 @@ import { ImageUploader } from './components/ImageUploader';
 import { BatchImageList } from './components/BatchImageList';
 import { LightboxModal } from './components/LightboxModal';
 import { Stepper, StepHeader, StepStatus } from './components/Steps';
-import { ProductImageItem, StudioConfig } from './types';
-import { buildPrompt, buildReferencePrompt, STUDIO_PRESETS } from './data/presets';
+import { sanitizeFileName } from './utils/filename';
+import { ProductImageItem, StudioConfig, StudioPreset } from './types';
+import { buildPrompt, buildReferencePrompt, createUserPreset, STUDIO_PRESETS } from './data/presets';
 import { Sparkles, AlertCircle, CheckCircle2, Info, Image as ImageIcon, Zap, ShieldCheck } from 'lucide-react';
 
 export default function App() {
@@ -34,6 +35,29 @@ export default function App() {
     referenceMimeType: undefined,
     isReferenceActive: false,
   });
+
+  // User-saved presets (persisted in localStorage so they survive reloads)
+  const [userPresets, setUserPresets] = useState<StudioPreset[]>(() => {
+    try {
+      const raw = localStorage.getItem('flare_user_presets');
+      return raw ? (JSON.parse(raw) as StudioPreset[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('flare_user_presets', JSON.stringify(userPresets));
+    } catch {
+      /* ignore storage quota / private-mode errors */
+    }
+  }, [userPresets]);
+
+  const allPresets = [...STUDIO_PRESETS, ...userPresets];
+
+  // Product name used as the base for downloaded file names (numbered when many).
+  const [productName, setProductName] = useState('');
 
   // Check health on mount
   useEffect(() => {
@@ -76,6 +100,7 @@ export default function App() {
     const promptToUse = useReference
       ? buildReferencePrompt(effectiveType)
       : buildPrompt(
+          allPresets,
           currentConfig.selectedPresetId,
           currentConfig.customPrompt,
           currentConfig.isCustomPromptActive,
@@ -146,30 +171,44 @@ export default function App() {
     const pending = items.filter((i) => i.status === 'idle' || i.status === 'error');
     if (pending.length === 0) return;
 
+    // Process several images at once, but cap concurrency so we don't slam the
+    // Gemini image API and trigger 429 rate-limit errors. Raise this if your
+    // Gemini quota is high (paid tier); lower it if you keep hitting rate limits.
+    const CONCURRENCY = 15;
+
     setIsProcessingBatch(true);
-    showToast(`กำลังเริ่มประมวลผล Batch สำหรับ ${pending.length} รูป...`, 'info');
+    showToast(`กำลังประมวลผลพร้อมกันครั้งละ ${CONCURRENCY} รูป (ทั้งหมด ${pending.length} รูป)...`, 'info');
 
-    for (const item of pending) {
-      // Mark current item as processing
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, status: 'processing', errorMessage: undefined } : i))
-      );
+    // Mark every queued item as "processing" up front so the UI reflects it immediately.
+    const pendingIds = new Set(pending.map((i) => i.id));
+    setItems((prev) =>
+      prev.map((i) => (pendingIds.has(i.id) ? { ...i, status: 'processing', errorMessage: undefined } : i))
+    );
 
-      try {
-        const result = await processItemApi(item, studioConfig);
-        setItems((prev) =>
-          prev.map((i) => (i.id === item.id ? { ...i, ...result } : i))
-        );
-      } catch (err: any) {
-        setItems((prev) =>
-          prev.map((i) =>
-            i.id === item.id
-              ? { ...i, status: 'error', errorMessage: err?.message || 'เกิดข้อผิดพลาด' }
-              : i
-          )
-        );
+    // Shared queue drained by CONCURRENCY workers running in parallel.
+    const queue = [...pending];
+    const worker = async () => {
+      while (queue.length > 0) {
+        const item = queue.shift();
+        if (!item) break;
+        try {
+          const result = await processItemApi(item, studioConfig);
+          setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...result } : i)));
+        } catch (err: any) {
+          setItems((prev) =>
+            prev.map((i) =>
+              i.id === item.id
+                ? { ...i, status: 'error', errorMessage: err?.message || 'เกิดข้อผิดพลาด' }
+                : i
+            )
+          );
+        }
       }
-    }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, queue.length) }, () => worker())
+    );
 
     setIsProcessingBatch(false);
     showToast('ประมวลผลรูปภาพทั้งหมดในคิวเสร็จสิ้นแล้ว!', 'success');
@@ -180,7 +219,10 @@ export default function App() {
     const a = document.createElement('a');
     a.href = item.resultUrl;
     const ext = item.resultUrl.match(/^data:image\/([a-zA-Z]+);/)?.[1] || 'png';
-    a.download = `Studio_Product_${item.id}_${item.imageSize || '1K'}.${ext}`;
+    const base = productName.trim() ? sanitizeFileName(productName) : sanitizeFileName(item.name || 'Studio_Product');
+    const position = items.findIndex((i) => i.id === item.id) + 1;
+    const suffix = items.length > 1 ? `_${position}` : '';
+    a.download = `${base}${suffix}.${ext}`;
     a.click();
     showToast(`ดาวน์โหลดรูปภาพ "${item.name}" สำเร็จ`, 'success');
   };
@@ -193,15 +235,16 @@ export default function App() {
 
     try {
       const zip = new JSZip();
-      const folder = zip.folder('ai-studio-products');
+      const zipBase = productName.trim() ? sanitizeFileName(productName) : '';
+      const folder = zip.folder(zipBase || 'ai-studio-products');
 
       completedItems.forEach((item, idx) => {
         if (!item.resultUrl) return;
         const base64Data = item.resultUrl.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
         const ext = item.resultUrl.match(/^data:image\/([a-zA-Z]+);/)?.[1] || 'png';
-        const sizeLabel = item.imageSize || '1K';
-        const cleanName = item.name.replace(/[^a-zA-Z0-9_\u0E00-\u0E7F-]/g, '_');
-        const fileName = `${idx + 1}_${cleanName}_${sizeLabel}.${ext}`;
+        const base = zipBase || sanitizeFileName(item.name || 'product');
+        const suffix = completedItems.length > 1 ? `_${idx + 1}` : '';
+        const fileName = `${base}${suffix}.${ext}`;
         folder?.file(fileName, base64Data, { base64: true });
       });
 
@@ -209,7 +252,7 @@ export default function App() {
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `AI_Studio_Products_HD_${Date.now()}.zip`;
+      a.download = zipBase ? `${zipBase}.zip` : `AI_Studio_Products_HD_${Date.now()}.zip`;
       a.click();
       URL.revokeObjectURL(url);
 
@@ -229,6 +272,26 @@ export default function App() {
       setItems([]);
       showToast('ล้างรายการรูปภาพทั้งหมดแล้ว', 'info');
     }
+  };
+
+  const handleSavePreset = (name: string) => {
+    const preset = createUserPreset(name.trim() || 'พรีเซ็ตของฉัน', studioConfig.customPrompt);
+    setUserPresets((prev) => [...prev, preset]);
+    setStudioConfig((cfg) => ({
+      ...cfg,
+      selectedPresetId: preset.id,
+      isCustomPromptActive: false,
+      isReferenceActive: false,
+    }));
+    showToast(`บันทึกพรีเซ็ต "${preset.titleTh}" เรียบร้อยแล้ว`, 'success');
+  };
+
+  const handleDeletePreset = (id: string) => {
+    setUserPresets((prev) => prev.filter((p) => p.id !== id));
+    setStudioConfig((cfg) =>
+      cfg.selectedPresetId === id ? { ...cfg, selectedPresetId: STUDIO_PRESETS[0].id } : cfg
+    );
+    showToast('ลบพรีเซ็ตแล้ว', 'info');
   };
 
   const completedCount = items.filter((i) => i.status === 'completed').length;
@@ -260,16 +323,16 @@ export default function App() {
               <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gold/12 text-gold">
                 <Sparkles className="w-4 h-4" />
               </span>
-              <h2 className="font-serif-studio text-2xl italic font-light tracking-wide text-ink">
-                FLARE STUDIO — <span className="not-italic font-semibold text-[11px] tracking-[0.2em] text-muted uppercase">Professional AI Photography &amp; Background Replacement</span>
+              <h2 className="font-serif-studio text-3xl italic font-light tracking-wide text-ink">
+                FLARE STUDIO — <span className="not-italic font-semibold text-[16px] tracking-[0.2em] text-muted uppercase">Professional AI Photography &amp; Background Replacement</span>
               </h2>
             </div>
-            <p className="text-[13px] text-muted leading-relaxed max-w-3xl">
+            <p className="text-[18px] text-muted leading-relaxed max-w-3xl">
               ระบบเปลี่ยนฉากหลังให้สินค้าด้วยโมเดล Gemini 3.1 Flash Image โดยรักษารูปลักษณ์สินค้าต้นแบบไว้ 100% พร้อมสร้างฉากหลังสตูดิโอสีขาว แสงขาวอุ่น และเงาสะท้อนระดับช่างภาพมืออาชีพ
             </p>
           </div>
 
-          <div className="relative z-10 shrink-0 inline-flex items-center gap-2 rounded-full bg-gold/10 border border-gold/30 px-4 py-2 text-[10px] uppercase font-bold tracking-widest text-gold-dark">
+          <div className="relative z-10 shrink-0 inline-flex items-center gap-2 rounded-full bg-gold/10 border border-gold/30 px-4 py-2 text-[15px] uppercase font-bold tracking-widest text-gold-dark">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>PRODUCT PRESERVED</span>
           </div>
@@ -288,6 +351,9 @@ export default function App() {
           <PresetSelector
             config={studioConfig}
             onChange={setStudioConfig}
+            presets={allPresets}
+            onSavePreset={handleSavePreset}
+            onDeletePreset={handleDeletePreset}
           />
         </section>
 
@@ -318,10 +384,12 @@ export default function App() {
             onRemoveSingle={handleRemoveSingle}
             onClearAll={handleClearAll}
             onOpenLightbox={(item) => setLightboxItem(item)}
+            productName={productName}
+            onProductNameChange={setProductName}
           />
           {items.length === 0 && (
             <div className="rounded-2xl border-2 border-dashed border-line p-8 text-center">
-              <p className="text-[12px] text-muted">
+              <p className="text-[17px] text-muted">
                 ยังไม่มีรูปในคิว — อัปโหลดรูปในขั้นตอนที่ 2 ก่อน แล้วผลลัพธ์จะแสดงที่นี่
               </p>
             </div>
@@ -341,7 +409,7 @@ export default function App() {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 animate-rise">
-          <div className={`flex items-center gap-3 rounded-xl px-5 py-3.5 border bg-white shadow-studio-lg text-[12px] font-semibold tracking-wide ${
+          <div className={`flex items-center gap-3 rounded-xl px-5 py-3.5 border bg-white shadow-studio-lg text-[17px] font-semibold tracking-wide ${
             toast.type === 'success'
               ? 'border-emerald-200 text-emerald-700'
               : toast.type === 'error'
