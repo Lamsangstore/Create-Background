@@ -207,7 +207,7 @@ Product SKU: ${code || '(none)'}
 Product info extracted from listing images (Thai):
 ${digest}
 
-Produce the structured fields a Thai seller pastes into Shopee/TikTok Shop. Base every value on the info above; don't invent specs. Check for CONTRADICTIONS (e.g. two different widths/lengths) and list them.
+Produce the structured fields a Thai seller pastes into Shopee/TikTok Shop. Base every value on the info above; don't invent specs. Write all Thai labels/values in natural, correct Thai — rephrased, not a word-for-word translation. Check for CONTRADICTIONS (e.g. two different widths/lengths) and list them.
 Return ONLY this JSON, no markdown:
 {"product_name":"<'${br} ${code} <English model name> <Thai product word> <material> ขนาด <W>x<L> cm.', <=255 chars, real size from info>","category":"<Thai category path>","attributes":[{"k":"<Thai label>","v":"<Thai value>"}],"warnings":["<Thai note>"]}
 Include 4-7 attributes relevant to this product type.`);
@@ -219,30 +219,39 @@ Include 4-7 attributes relevant to this product type.`);
       // ----- Phase 2b: description (HTML) -----
       setProgress({ pct: Math.round(((batches + 1) / (batches + STEPS)) * 100), label: 'กำลังเขียนคำอธิบายสินค้า…' });
       const descRaw = await callGemini([],
-`You are a Thai e-commerce copywriter for "Lamsang Store" (brand: ${br}).
+`You are a top Thai e-commerce copywriter for "Lamsang Store" (brand: ${br}).
 Product SKU: ${code || '(none)'}
-Product info (Thai):
+Source product info (Thai, extracted from the images):
 ${digest}
 
-Write a polished, concise Thai product description for Shopee/TikTok Shop as an HTML fragment (rich-text). Rules:
+STYLE (very important):
+- Do NOT translate the source literally. REWRITE it into fresh, persuasive Thai sales copy.
+- Sound like a real, experienced Thai online seller — warm, confident, natural; never robotic or machine-translated.
+- Concise and punchy: short sentences, no filler, no repetition.
+- Sell the benefit and the look/feeling it gives the buyer, not just raw specs.
+- Use correct, clear, natural Thai (proper spelling and word choice).
+
+Write the description for Shopee/TikTok Shop as an HTML fragment (rich-text). Rules:
 - Return ONLY the HTML fragment. NO markdown, NO code fences, NO JSON, no commentary.
-- Use <h2> once for the title: ${br} ${code} <English model name> – <short Thai hook>
-- Then <p> for a 1-2 sentence intro.
-- Then <h3>จุดเด่นของสินค้า</h3> and a <ul> with 4-5 <li>, each '<strong>label</strong>: คำอธิบายไทยสั้นๆ'.
-- Then <h3>รายละเอียดสินค้า</h3> and a <ul> with <li> for รหัสสินค้า (${code}), วัสดุ, ขนาด, สี, and other known specs.
-- A few tasteful emoji are OK. Keep it tight.`);
+- <h2> once for a catchy title: ${br} ${code} <English model name> – <short Thai hook>
+- <p> a 1-2 sentence hook that makes the buyer want it.
+- <h3>จุดเด่นของสินค้า</h3> then <ul> with 4-5 <li>, each '<strong>ประโยชน์สั้นๆ</strong>: ขยายความ 1 ประโยคกระชับ' — lead with the benefit, not the spec.
+- <h3>รายละเอียดสินค้า</h3> then <ul> with <li> for รหัสสินค้า (${code}), วัสดุ, ขนาด, สี, and other known specs (factual).
+- A few tasteful emoji OK. Keep the whole thing tight.`);
       const description = (descRaw || '').replace(/```html/gi, '').replace(/```/g, '').trim();
 
       // ----- Phase 2c: tiktok + overlays -----
       setProgress({ pct: Math.round(((batches + 2) / (batches + STEPS)) * 100), label: 'กำลังร่างแคปชั่น TikTok และข้อความบนภาพ…' });
       const tiktokRaw = await callGemini([],
-`You are a Thai social commerce copywriter for "Lamsang Store" (women's fashion).
-Product info (Thai):
+`You are a top Thai social-commerce copywriter for "Lamsang Store" (women's fashion).
+Source product info (Thai):
 ${digest}
 
+STYLE: Don't translate literally — write fresh, human, persuasive Thai that sounds like a real Thai creator. Short, punchy, natural, correct Thai. Hook first, benefit-driven.
+
 Return ONLY this JSON, no markdown:
-{"caption":"<short punchy Thai TikTok caption with a hook + 1-2 emoji>","hashtags":["<10-12 relevant Thai/English hashtags, each starting with #>"],"overlays":[{"label":"<short role e.g. Hero / จุดขาย 1 / สเปก>","text":"<short Thai text to overlay on that image>"}]}
-Provide 4-6 overlay suggestions covering hero headline, key selling points, and a spec caption.`);
+{"caption":"<short punchy Thai TikTok caption: strong hook + benefit + 1-2 emoji>","hashtags":["<10-12 relevant Thai/English hashtags, each starting with #>"],"overlays":[{"label":"<short role e.g. Hook / จุดขาย 1 / สเปก>","text":"<very short benefit-driven Thai on-image text>"}]}
+Provide 4-6 overlay suggestions: an attention-grabbing hook headline, key selling points, and a spec caption.`);
       let tiktok: { caption: string; hashtags: string[]; overlays: Overlay[] };
       try { tiktok = parseJSON(tiktokRaw); } catch { tiktok = { caption: tiktokRaw, hashtags: [], overlays: [] }; }
 
