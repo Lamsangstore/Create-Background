@@ -148,6 +148,38 @@ export function buildPrompt(presets: StudioPreset[], presetId: string, customPro
   return preset.promptTemplate.replace(/\{PRODUCT\}/g, word);
 }
 
+/**
+ * Per-product-type wording for the "change product colour to match a reference
+ * image" tool. Keeps the same prompt structure but swaps the coloured part,
+ * material, preserved details, and the parts that must NOT change colour.
+ */
+const COLOR_CHANGE_PARTS: Record<ProductType, { part: string; product: string; material: string; details: string; preserve: string }> = {
+  belt: { part: 'belt strap', product: 'belt', material: 'leather', details: 'stitching, holes, edges', preserve: 'buckle' },
+  watch: { part: 'watch strap/band', product: 'watch', material: 'strap', details: 'dial, hands, hour markers, and crown', preserve: 'watch case and dial face' },
+  bag: { part: 'bag body', product: 'bag', material: 'leather', details: 'stitching, seams, and edges', preserve: 'metal hardware, zippers, and clasps' },
+  shoes: { part: 'shoe upper', product: 'shoes', material: 'upper material', details: 'stitching, eyelets, and sole edges', preserve: 'sole and laces' },
+  jewelry: { part: "jewelry's main coloured element", product: 'jewelry item', material: 'material', details: 'engravings, facets, and settings', preserve: 'metal setting and any gemstones not being recoloured' },
+  cosmetics: { part: 'product packaging', product: 'cosmetic product', material: 'packaging', details: 'shape and surface finish', preserve: 'cap, pump, and printed label' },
+  general: { part: "product's main coloured surface", product: 'product', material: 'material', details: 'edges, seams, and surface details', preserve: 'logos, buttons, and accent parts' },
+};
+
+/**
+ * Prompt for the colour-change tool: two images (1 = product, 2 = colour
+ * reference). Adapts wording to the product type; a non-empty custom prompt wins.
+ */
+export function buildColorChangePrompt(productType: ProductType, customPrompt: string, isCustomActive: boolean): string {
+  if (isCustomActive && customPrompt.trim()) return customPrompt.trim();
+  const t = COLOR_CHANGE_PARTS[productType] || COLOR_CHANGE_PARTS.general;
+  return `Use the first image as the base image.
+Change the ${t.part} color to match the ${t.part} color shown in the second reference image.
+Accurately transfer the color tone, brightness, and material appearance from the second image onto the ${t.product} in the first image.
+Maintain realistic ${t.material} texture, grain, and finish.
+Preserve all original details of the ${t.product} including shape, ${t.details}, and proportions.
+Do NOT change the ${t.preserve} color, material, or design.
+Ensure consistent lighting, natural shadows, and realistic highlights.
+The result should look like a professional product photo.`;
+}
+
 /** Build a user-saved preset from a custom prompt so it can live in the grid. */
 export function createUserPreset(name: string, promptTemplate: string): StudioPreset {
   const id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
