@@ -162,6 +162,78 @@ async function startServer() {
     }
   });
 
+  // Lamsang Listing Studio — text + vision (OCR / translate / copywriting) via Gemini
+  app.post("/api/listing", async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({
+          error: "GEMINI_API_KEY_MISSING",
+          message: "ไม่พบคีย์ GEMINI_API_KEY กรุณาตรวจสอบการตั้งค่า Secrets",
+        });
+      }
+
+      const {
+        images = [],
+        prompt,
+        model = "gemini-3.6-flash",
+        maxOutputTokens = 8192,
+      } = req.body;
+
+      if (!prompt) {
+        return res.status(400).json({ error: "INVALID_REQUEST", message: "กรุณาระบุคำสั่ง (prompt)" });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: { headers: { "User-Agent": "aistudio-build" } },
+      });
+
+      const parts: any[] = [];
+      for (const img of Array.isArray(images) ? images : []) {
+        if (!img?.data) continue;
+        const clean = String(img.data).replace(/^data:image\/[a-zA-Z]+;base64,/, "");
+        parts.push({ inlineData: { data: clean, mimeType: img.mimeType || "image/jpeg" } });
+      }
+      parts.push({ text: prompt });
+
+      console.log(`[API /listing] model=${model}, images=${parts.length - 1}`);
+
+      // Gemini 3 keeps "thinking" on; give a generous output budget so the thinking
+      // tokens don't starve the actual answer (these responses are otherwise moderate).
+      const response = await ai.models.generateContent({
+        model,
+        contents: { parts },
+        config: { maxOutputTokens },
+      });
+
+      let text = "";
+      const outParts = response.candidates?.[0]?.content?.parts;
+      if (outParts) for (const p of outParts) if (p.text) text += p.text;
+
+      return res.json({ success: true, text: text.trim() });
+    } catch (error: any) {
+      console.error("[API Error /listing]:", error);
+      const errMessageStr = String(error?.message || "");
+      const isQuotaError =
+        error?.status === 429 ||
+        errMessageStr.includes("429") ||
+        errMessageStr.includes("RESOURCE_EXHAUSTED") ||
+        errMessageStr.includes("Quota exceeded");
+      if (isQuotaError) {
+        return res.status(429).json({
+          error: "RATE_LIMIT_EXCEEDED",
+          isRateLimit: true,
+          message: "โควต้า Gemini ชั่วคราวเกินขีดจำกัด (Rate Limit 429) กรุณารอสักครู่แล้วลองใหม่",
+        });
+      }
+      return res.status(500).json({
+        error: "SERVER_ERROR",
+        message: error?.message || "เกิดข้อผิดพลาดในการประมวลผลข้อความด้วย AI",
+      });
+    }
+  });
+
   // Serve Vite in dev, static files in prod
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
