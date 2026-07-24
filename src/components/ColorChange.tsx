@@ -1,19 +1,34 @@
 import React, { useRef, useState } from 'react';
 import JSZip from 'jszip';
-import { ProductImageItem, ProductType, AspectRatio, ImageSize } from '../types';
+import { ProductType, AspectRatio, ImageSize } from '../types';
 import { PRODUCT_TYPES, buildColorChangePrompt } from '../data/presets';
-import { ImageComparisonSlider } from './ImageComparisonSlider';
 import { sanitizeFileName } from '../utils/filename';
 import {
   Palette, Tag, UploadCloud, ImagePlus, Sparkles, Loader2, RotateCcw,
-  FileArchive, Trash2, RefreshCw, X, Download, Droplet,
+  FileArchive, Trash2, RefreshCw, X, Download, Droplet, AlertTriangle,
 } from 'lucide-react';
 
 interface ColorChangeProps {
   onToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
+interface ImgAsset { id: string; name: string; url: string; mime: string; }
+interface Job {
+  key: string; productId: string; colorId: string;
+  status: 'processing' | 'completed' | 'error';
+  resultUrl?: string; error?: string;
+}
+
 const CONCURRENCY = 6;
+const jobKey = (productId: string, colorId: string) => `${productId}::${colorId}`;
+
+const fileToDataUrl = (file: File): Promise<string> =>
+  new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onerror = () => rej(new Error('read failed'));
+    fr.onload = () => res(fr.result as string);
+    fr.readAsDataURL(file);
+  });
 
 export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
   const [productType, setProductType] = useState<ProductType>('belt');
@@ -21,66 +36,70 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
   const [isCustomActive, setIsCustomActive] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
   const [imageSize, setImageSize] = useState<ImageSize>('1K');
-  const [colorRef, setColorRef] = useState<{ url: string; mime: string } | null>(null);
-  const [items, setItems] = useState<ProductImageItem[]>([]);
+  const [products, setProducts] = useState<ImgAsset[]>([]);
+  const [colors, setColors] = useState<ImgAsset[]>([]);
+  const [jobs, setJobs] = useState<Record<string, Job>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  const baseInputRef = useRef<HTMLInputElement>(null);
+  const productInputRef = useRef<HTMLInputElement>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   const activePrompt = buildColorChangePrompt(productType, customPrompt, isCustomActive);
-  const completedItems = items.filter((i) => i.status === 'completed');
-  const pendingItems = items.filter((i) => i.status === 'idle' || i.status === 'error');
-
-  const fileToDataUrl = (file: File): Promise<string> =>
-    new Promise((res, rej) => {
-      const fr = new FileReader();
-      fr.onerror = () => rej(new Error('read failed'));
-      fr.onload = () => res(fr.result as string);
-      fr.readAsDataURL(file);
-    });
+  const totalCombos = products.length * colors.length;
+  const completedCount = Object.keys(jobs).filter((k) => jobs[k].status === 'completed').length;
 
   /* ---------- product type & prompt ---------- */
-  const handleTypeChange = (t: ProductType) => {
-    setProductType(t);
-    if (!isCustomActive) setCustomPrompt(''); // keep showing the fresh per-type prompt
-  };
+  const handleTypeChange = (t: ProductType) => { setProductType(t); if (!isCustomActive) setCustomPrompt(''); };
   const handlePromptChange = (v: string) => { setCustomPrompt(v); setIsCustomActive(true); };
   const resetPrompt = () => { setIsCustomActive(false); setCustomPrompt(''); };
 
   /* ---------- uploads ---------- */
-  const addBaseFiles = async (list: FileList | File[]) => {
+  const readAssets = async (list: FileList | File[]): Promise<ImgAsset[]> => {
     const imgs = Array.from(list).filter((f) => f.type.startsWith('image/'));
-    if (!imgs.length) { onToast('ไฟล์ที่เลือกไม่ใช่รูปภาพ', 'error'); return; }
-    const added: ProductImageItem[] = [];
+    const out: ImgAsset[] = [];
     for (const f of imgs) {
-      const url = await fileToDataUrl(f);
-      added.push({
-        id: `cc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        name: f.name, originalUrl: url, mimeType: f.type || 'image/png',
-        status: 'idle', productType, createdAt: Date.now(),
-      });
+      out.push({ id: `a_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, name: f.name, url: await fileToDataUrl(f), mime: f.type || 'image/png' });
     }
-    setItems((prev) => [...prev, ...added]);
-    onToast(`เพิ่ม ${added.length} รูปแล้ว`, 'success');
+    return out;
   };
-
-  const setColorReference = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    setColorRef({ url: await fileToDataUrl(file), mime: file.type || 'image/png' });
+  const addProducts = async (list: FileList | File[]) => {
+    const a = await readAssets(list);
+    if (!a.length) { onToast('ไฟล์ที่เลือกไม่ใช่รูปภาพ', 'error'); return; }
+    setProducts((p) => [...p, ...a]); onToast(`เพิ่มสินค้า ${a.length} รูป`, 'success');
+  };
+  const addColors = async (list: FileList | File[]) => {
+    const a = await readAssets(list);
+    if (!a.length) { onToast('ไฟล์ที่เลือกไม่ใช่รูปภาพ', 'error'); return; }
+    setColors((c) => [...c, ...a]); onToast(`เพิ่มสีอ้างอิง ${a.length} สี`, 'success');
+  };
+  const removeProduct = (id: string) => {
+    setProducts((p) => p.filter((x) => x.id !== id));
+    setJobs((prev) => {
+      const n: Record<string, Job> = {};
+      for (const k of Object.keys(prev)) if (prev[k].productId !== id) n[k] = prev[k];
+      return n;
+    });
+  };
+  const removeColor = (id: string) => {
+    setColors((c) => c.filter((x) => x.id !== id));
+    setJobs((prev) => {
+      const n: Record<string, Job> = {};
+      for (const k of Object.keys(prev)) if (prev[k].colorId !== id) n[k] = prev[k];
+      return n;
+    });
   };
 
   /* ---------- processing ---------- */
-  const processItem = async (item: ProductImageItem): Promise<Partial<ProductImageItem>> => {
+  const processPair = async (product: ImgAsset, color: ImgAsset): Promise<string> => {
     const res = await fetch('/api/edit-image', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        imageBase64: item.originalUrl,
-        mimeType: item.mimeType,
-        referenceImageBase64: colorRef!.url,
-        referenceMimeType: colorRef!.mime,
+        imageBase64: product.url,
+        mimeType: product.mime,
+        referenceImageBase64: color.url,
+        referenceMimeType: color.mime,
         prompt: activePrompt,
         aspectRatio,
         imageSize,
@@ -89,66 +108,83 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'ไม่สามารถเปลี่ยนสีได้จาก AI');
-    return { status: 'completed', resultUrl: data.resultImage, completedAt: Date.now() };
+    return data.resultImage as string;
   };
 
-  const runOne = async (id: string) => {
-    const target = items.find((i) => i.id === id);
-    if (!target || !colorRef) return;
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status: 'processing', errorMessage: undefined } : i)));
-    try {
-      const r = await processItem(target);
-      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...r } : i)));
-    } catch (err: any) {
-      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status: 'error', errorMessage: err?.message || 'เกิดข้อผิดพลาด' } : i)));
-    }
-  };
-
-  const processAll = async () => {
-    if (!colorRef) { onToast('กรุณาอัปโหลดรูปสีอ้างอิงก่อน', 'info'); return; }
-    const pending = items.filter((i) => i.status === 'idle' || i.status === 'error');
-    if (!pending.length) return;
+  const runPairs = async (pairs: { product: ImgAsset; color: ImgAsset }[]) => {
+    if (!pairs.length) return;
     setIsProcessing(true);
-    const pendingIds = new Set(pending.map((i) => i.id));
-    setItems((prev) => prev.map((i) => (pendingIds.has(i.id) ? { ...i, status: 'processing', errorMessage: undefined } : i)));
-
-    const queue = [...pending];
+    setJobs((prev) => {
+      const n = { ...prev };
+      for (const { product, color } of pairs) {
+        const key = jobKey(product.id, color.id);
+        n[key] = { key, productId: product.id, colorId: color.id, status: 'processing', error: undefined };
+      }
+      return n;
+    });
+    const queue = [...pairs];
     const worker = async () => {
       while (queue.length > 0) {
-        const item = queue.shift();
-        if (!item) break;
+        const pair = queue.shift();
+        if (!pair) break;
+        const key = jobKey(pair.product.id, pair.color.id);
         try {
-          const r = await processItem(item);
-          setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, ...r } : i)));
+          const resultUrl = await processPair(pair.product, pair.color);
+          setJobs((prev) => ({ ...prev, [key]: { ...prev[key], status: 'completed', resultUrl } }));
         } catch (err: any) {
-          setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: 'error', errorMessage: err?.message || 'เกิดข้อผิดพลาด' } : i)));
+          setJobs((prev) => ({ ...prev, [key]: { ...prev[key], status: 'error', error: err?.message || 'เกิดข้อผิดพลาด' } }));
         }
       }
     };
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, () => worker()));
     setIsProcessing(false);
-    onToast('เปลี่ยนสีครบทุกรูปแล้ว!', 'success');
   };
+
+  const generateAll = async () => {
+    if (!products.length) { onToast('อัปโหลดรูปสินค้าก่อนครับ', 'info'); return; }
+    if (!colors.length) { onToast('อัปโหลดรูปสีอ้างอิงก่อนครับ', 'info'); return; }
+    const pairs: { product: ImgAsset; color: ImgAsset }[] = [];
+    for (const product of products) for (const color of colors) {
+      const j = jobs[jobKey(product.id, color.id)];
+      if (!j || j.status === 'error') pairs.push({ product, color }); // skip already-done
+    }
+    if (!pairs.length) { onToast('ทุกคู่สร้างเสร็จแล้ว', 'info'); return; }
+    onToast(`กำลังสร้าง ${pairs.length} รูป (${products.length} สินค้า × ${colors.length} สี)…`, 'info');
+    await runPairs(pairs);
+    onToast('สร้างครบทุกคู่แล้ว!', 'success');
+  };
+
+  const retryOne = (product: ImgAsset, color: ImgAsset) => runPairs([{ product, color }]);
 
   /* ---------- downloads ---------- */
   const extOf = (url: string) => url.match(/^data:image\/([a-zA-Z]+);/)?.[1] || 'png';
-  const downloadOne = (item: ProductImageItem) => {
-    if (!item.resultUrl) return;
+  const outName = (product: ImgAsset, colorIdx: number, ext: string) =>
+    `${sanitizeFileName(product.name.replace(/\.[^.]+$/, ''))}_color${colorIdx + 1}.${ext}`;
+
+  const downloadOne = (product: ImgAsset, color: ImgAsset, colorIdx: number) => {
+    const job = jobs[jobKey(product.id, color.id)];
+    if (!job?.resultUrl) return;
     const a = document.createElement('a');
-    a.href = item.resultUrl;
-    a.download = `${sanitizeFileName(item.name.replace(/\.[^.]+$/, ''))}_recolored.${extOf(item.resultUrl)}`;
+    a.href = job.resultUrl;
+    a.download = outName(product, colorIdx, extOf(job.resultUrl));
     a.click();
   };
+
   const downloadZip = async () => {
-    if (!completedItems.length) return;
+    const done = Object.keys(jobs).filter((k) => jobs[k].status === 'completed' && jobs[k].resultUrl);
+    if (!done.length) return;
     onToast('กำลังบีบอัดเป็น ZIP...', 'info');
     try {
       const zip = new JSZip();
-      const folder = zip.folder('recolored');
-      completedItems.forEach((it, idx) => {
-        const base64 = it.resultUrl!.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
-        const suffix = completedItems.length > 1 ? `_${idx + 1}` : '';
-        folder?.file(`${sanitizeFileName(it.name.replace(/\.[^.]+$/, ''))}_recolored${suffix}.${extOf(it.resultUrl!)}`, base64, { base64: true });
+      products.forEach((product) => {
+        const folder = zip.folder(sanitizeFileName(product.name.replace(/\.[^.]+$/, '')) || 'product');
+        colors.forEach((color, ci) => {
+          const job = jobs[jobKey(product.id, color.id)];
+          if (job?.status === 'completed' && job.resultUrl) {
+            const base64 = job.resultUrl.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
+            folder?.file(outName(product, ci, extOf(job.resultUrl)), base64, { base64: true });
+          }
+        });
       });
       const blob = await zip.generateAsync({ type: 'blob' });
       const a = document.createElement('a');
@@ -157,8 +193,6 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
       onToast('ดาวน์โหลด ZIP เรียบร้อยแล้ว!', 'success');
     } catch { onToast('สร้าง ZIP ไม่สำเร็จ', 'error'); }
   };
-
-  const removeItem = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
 
   /* ---------- render ---------- */
   return (
@@ -169,7 +203,7 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
         <div>
           <h2 className="text-[19px] font-semibold text-ink">เปลี่ยนสีสินค้าจากรูปสีอ้างอิง</h2>
           <p className="text-[15px] text-muted leading-relaxed max-w-3xl mt-0.5">
-            อัปโหลดรูปสินค้า + รูป "สีที่ต้องการ" — AI จะย้ายโทนสี/วัสดุจากรูปสีมาใส่สินค้า โดยคงรูปทรง ลายเย็บ และชิ้นส่วนที่ไม่ควรเปลี่ยน (เช่น หัวเข็มขัด) ไว้ครบ
+            ใส่ได้ <b>หลายสี × หลายสินค้า</b> — ระบบจะสร้างครบทุกคู่ (เช่น 8 สี × 2 สินค้า = 16 รูป) โดยย้ายโทนสี/วัสดุจากรูปสีมาใส่สินค้า และคงรูปทรง ลายเย็บ ชิ้นส่วนที่ไม่ควรเปลี่ยน (เช่น หัวเข็มขัด) ไว้ครบ
           </p>
         </div>
       </div>
@@ -187,7 +221,6 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
             </select>
           </div>
         </div>
-
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[14px] font-semibold text-muted">คำสั่งเปลี่ยนสี ({isCustomActive ? 'แก้ไขเอง' : 'อัตโนมัติตามประเภท'})</span>
@@ -201,8 +234,6 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
             onChange={(e) => handlePromptChange(e.target.value)}
             className="w-full bg-cream-2/50 border border-line rounded-xl p-3.5 text-[13px] font-mono text-ink leading-relaxed focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15 resize-y" />
         </div>
-
-        {/* resolution + aspect */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
           <div className="space-y-2">
             <span className="text-[14px] uppercase tracking-[0.15em] font-bold text-muted">ความละเอียด</span>
@@ -229,109 +260,124 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
         </div>
       </div>
 
-      {/* Color reference */}
+      {/* Color references (multiple) */}
       <div className="card p-6 space-y-3">
-        <div className="flex items-center gap-2">
-          <Droplet className="w-4 h-4 text-gold" />
-          <h3 className="text-[15px] uppercase tracking-[0.2em] font-bold text-muted">รูปสีอ้างอิง (สีที่ต้องการ)</h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-[15px] uppercase tracking-[0.2em] font-bold text-muted flex items-center gap-2"><Droplet className="w-4 h-4 text-gold" /> รูปสีอ้างอิง (ใส่ได้หลายสี)</h3>
+          {colors.length > 0 && <span className="text-[14px] text-muted">{colors.length} สี</span>}
         </div>
-        <input ref={colorInputRef} type="file" accept="image/*" className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) setColorReference(f); e.target.value = ''; }} />
-        {!colorRef ? (
-          <button type="button" onClick={() => colorInputRef.current?.click()}
-            className="w-full rounded-2xl border-2 border-dashed border-line bg-cream-2/40 hover:border-gold/50 hover:bg-gold/5 p-6 flex flex-col items-center gap-2 transition-all cursor-pointer">
-            <span className="w-11 h-11 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold"><ImagePlus className="w-5 h-5" /></span>
-            <span className="text-[14px] uppercase tracking-widest font-bold text-ink">อัปโหลดรูปสีอ้างอิง</span>
-            <span className="text-[13px] text-subtle">รูปที่มีสี/วัสดุที่อยากได้ (เช่น หนังสีน้ำตาล)</span>
-          </button>
-        ) : (
-          <div className="flex items-center gap-4 p-3 rounded-2xl border border-gold/40 bg-gold/5">
-            <img src={colorRef.url} alt="Color reference" className="w-20 h-20 object-cover rounded-xl border border-line shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-semibold text-ink">รูปสีอ้างอิงพร้อมใช้งาน</p>
-              <p className="text-[13px] text-muted">AI จะดึงโทนสีและวัสดุจากรูปนี้มาใส่สินค้า</p>
-              <div className="flex gap-2 mt-2">
-                <button type="button" onClick={() => colorInputRef.current?.click()} className="btn btn-ghost text-[13px] px-3 py-1.5">เปลี่ยนรูป</button>
-                <button type="button" onClick={() => setColorRef(null)} className="inline-flex items-center gap-1 rounded-lg text-[13px] text-muted hover:text-rose-600 border border-line hover:border-rose-200 px-3 py-1.5 cursor-pointer"><X className="w-3.5 h-3.5" /> ลบ</button>
-              </div>
+        <input ref={colorInputRef} type="file" accept="image/*" multiple className="hidden"
+          onChange={(e) => { if (e.target.files?.length) addColors(e.target.files); e.target.value = ''; }} />
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-2.5">
+          {colors.map((c, i) => (
+            <div key={c.id} className="relative aspect-square rounded-xl overflow-hidden border border-line bg-cream-2">
+              <img src={c.url} alt="" className="w-full h-full object-cover" />
+              <span className="absolute left-1 top-1 bg-ink/70 text-white text-[12px] font-bold px-1.5 rounded-full">{i + 1}</span>
+              <button type="button" onClick={() => removeColor(c.id)} className="absolute right-1 top-1 w-5 h-5 rounded-full bg-ink/70 text-white flex items-center justify-center hover:bg-rose-500 cursor-pointer"><X className="w-3 h-3" /></button>
             </div>
+          ))}
+          <button type="button" onClick={() => colorInputRef.current?.click()}
+            className="aspect-square rounded-xl border-2 border-dashed border-line hover:border-gold/50 hover:bg-gold/5 flex flex-col items-center justify-center gap-1 text-gold transition-all cursor-pointer">
+            <ImagePlus className="w-5 h-5" />
+            <span className="text-[12px] font-bold text-ink">เพิ่มสี</span>
+          </button>
+        </div>
+        <p className="text-[13px] text-subtle">อัปโหลดรูปที่มีสี/วัสดุที่อยากได้ (เช่น หนังสีน้ำตาล, สีดำเงา) — ใส่กี่สีก็ได้</p>
+      </div>
+
+      {/* Product images (multiple) */}
+      <div className="card p-6 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-[15px] uppercase tracking-[0.2em] font-bold text-muted flex items-center gap-2"><Sparkles className="w-4 h-4 text-gold" /> รูปสินค้า (ใส่ได้หลายชิ้น)</h3>
+          {products.length > 0 && <span className="text-[14px] text-muted">{products.length} สินค้า</span>}
+        </div>
+        <input ref={productInputRef} type="file" accept="image/*" multiple className="hidden"
+          onChange={(e) => { if (e.target.files?.length) addProducts(e.target.files); e.target.value = ''; }} />
+        {products.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-2.5">
+            {products.map((p, i) => (
+              <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden border border-line bg-cream-2">
+                <img src={p.url} alt="" className="w-full h-full object-cover" />
+                <span className="absolute left-1 top-1 bg-ink/70 text-white text-[12px] font-bold px-1.5 rounded-full">{i + 1}</span>
+                <button type="button" onClick={() => removeProduct(p.id)} className="absolute right-1 top-1 w-5 h-5 rounded-full bg-ink/70 text-white flex items-center justify-center hover:bg-rose-500 cursor-pointer"><X className="w-3 h-3" /></button>
+              </div>
+            ))}
           </div>
         )}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+          onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files.length) addProducts(e.dataTransfer.files); }}
+          onClick={() => productInputRef.current?.click()}
+          className={`rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer transition-all ${isDragging ? 'border-gold bg-gold/5' : 'border-line bg-cream-2/40 hover:border-gold/50 hover:bg-gold/5'}`}
+        >
+          <span className="inline-flex w-11 h-11 rounded-2xl bg-gold/10 border border-gold/25 items-center justify-center text-gold mb-1.5"><UploadCloud className="w-5 h-5" /></span>
+          <p className="text-[14px] font-bold uppercase tracking-[0.1em] text-ink">อัปโหลดรูปสินค้า — ลากมาวางได้</p>
+          <p className="text-[13px] text-muted mt-0.5">รองรับหลายรูป (PNG · JPG · WEBP)</p>
+        </div>
       </div>
 
-      {/* Base images uploader */}
-      <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-        onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
-        onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files.length) addBaseFiles(e.dataTransfer.files); }}
-        onClick={() => baseInputRef.current?.click()}
-        className={`rounded-2xl border-2 border-dashed p-7 text-center cursor-pointer transition-all ${isDragging ? 'border-gold bg-gold/5' : 'border-line bg-white hover:border-gold/50 hover:bg-cream-2/60'}`}
-      >
-        <input ref={baseInputRef} type="file" accept="image/*" multiple className="hidden"
-          onChange={(e) => { if (e.target.files?.length) addBaseFiles(e.target.files); e.target.value = ''; }} />
-        <span className="inline-flex w-12 h-12 rounded-2xl bg-gold/10 border border-gold/25 items-center justify-center text-gold mb-2"><UploadCloud className="w-6 h-6" /></span>
-        <p className="text-[15px] font-bold uppercase tracking-[0.12em] text-ink">อัปโหลดรูปสินค้า — ลากมาวางได้</p>
-        <p className="text-[14px] text-muted mt-1">รองรับหลายรูป (PNG · JPG · WEBP)</p>
+      {/* Generate bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={generateAll} disabled={isProcessing || !totalCombos} className="btn btn-primary text-[15px] px-6 py-3">
+          {isProcessing ? <><Loader2 className="w-4 h-4 animate-spin" /> กำลังสร้าง…</> : <><Sparkles className="w-4 h-4 fill-white" /> สร้างทั้งหมด{totalCombos > 0 ? ` (${totalCombos} รูป)` : ''}</>}
+        </button>
+        {completedCount > 0 && (
+          <button type="button" onClick={downloadZip} className="btn text-[15px] px-4 py-3 bg-emerald-600 text-white hover:bg-emerald-500 shadow-sm"><FileArchive className="w-4 h-4" /> ดาวน์โหลดทั้งหมด (ZIP)</button>
+        )}
+        {(products.length > 0 || colors.length > 0) && (
+          <button type="button" onClick={() => { setProducts([]); setColors([]); setJobs({}); }} className="btn btn-ghost text-[15px] px-4 py-3"><Trash2 className="w-4 h-4" /> ล้างทั้งหมด</button>
+        )}
+        <span className="text-[14px] text-muted ml-auto">
+          {totalCombos > 0
+            ? <><b className="text-ink">{products.length}</b> สินค้า × <b className="text-ink">{colors.length}</b> สี = <b className="text-gold-dark">{totalCombos}</b> รูป{completedCount > 0 ? ` · เสร็จ ${completedCount}` : ''}</>
+            : 'ใส่รูปสินค้าและรูปสีอ้างอิงก่อน'}
+        </span>
       </div>
 
-      {/* Actions */}
-      {items.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={processAll} disabled={isProcessing || !colorRef} className="btn btn-primary text-[15px] px-6 py-3">
-            {isProcessing ? <><Loader2 className="w-4 h-4 animate-spin" /> กำลังเปลี่ยนสี…</> : <><Sparkles className="w-4 h-4 fill-white" /> เปลี่ยนสีทุกรูป ({pendingItems.length})</>}
-          </button>
-          <button type="button" onClick={downloadZip} disabled={!completedItems.length} className="btn text-[15px] px-4 py-3 bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 shadow-sm"><FileArchive className="w-4 h-4" /> ดาวน์โหลดทั้งหมด (ZIP)</button>
-          <button type="button" onClick={() => setItems([])} className="btn btn-ghost text-[15px] px-4 py-3"><Trash2 className="w-4 h-4" /> ล้างรายการ</button>
-          <span className="text-[14px] text-muted ml-auto">{completedItems.length > 0 ? <>เปลี่ยนแล้ว <b className="text-emerald-600">{completedItems.length}</b> / {items.length} รูป</> : `${items.length} รูป`}</span>
-          {!colorRef && <span className="text-[13px] text-gold-dark">⚠ ยังไม่ได้ใส่รูปสีอ้างอิง</span>}
-        </div>
-      )}
-
-      {/* Grid */}
-      {items.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-line p-10 text-center">
-          <p className="text-[15px] text-muted">ยังไม่มีรูปสินค้า — อัปโหลดด้านบน แล้วใส่รูปสีอ้างอิง จากนั้นกด "เปลี่ยนสีทุกรูป"</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {items.map((item) => (
-            <div key={item.id} className={`bg-surface rounded-2xl border p-5 space-y-4 transition-all ${
-              item.status === 'processing' ? 'border-gold ring-2 ring-gold/20'
-              : item.status === 'completed' ? 'border-line shadow-studio'
-              : item.status === 'error' ? 'border-rose-200 bg-rose-50/40' : 'border-line'
-            }`}>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[15px] font-semibold text-ink truncate">{item.name}</p>
-                <button type="button" onClick={() => removeItem(item.id)} className="p-1.5 rounded-lg text-muted hover:text-rose-600 hover:bg-rose-50 cursor-pointer"><X className="w-4 h-4" /></button>
+      {/* Results grouped by product */}
+      {totalCombos > 0 && Object.keys(jobs).length > 0 && (
+        <div className="space-y-5">
+          {products.map((product) => (
+            <div key={product.id} className="card p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <img src={product.url} alt="" className="w-14 h-14 rounded-xl object-cover border border-line shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[15px] font-semibold text-ink truncate">{product.name}</p>
+                  <p className="text-[13px] text-muted">{colors.length} เฉดสี</p>
+                </div>
               </div>
-
-              {item.status === 'completed' && item.resultUrl ? (
-                <ImageComparisonSlider originalUrl={item.originalUrl} resultUrl={item.resultUrl} title={item.name} onDownload={() => downloadOne(item)} />
-              ) : item.status === 'processing' ? (
-                <div className="relative aspect-square sm:aspect-[4/3] bg-cream-2 rounded-xl border border-gold/30 flex flex-col items-center justify-center gap-3 overflow-hidden">
-                  <img src={item.originalUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-25 blur-sm" />
-                  <div className="relative z-10 w-12 h-12 rounded-xl bg-gold text-white flex items-center justify-center animate-pulse"><Palette className="w-6 h-6" /></div>
-                  <p className="relative z-10 text-[14px] font-bold uppercase tracking-widest text-ink">กำลังเปลี่ยนสี...</p>
-                </div>
-              ) : item.status === 'error' ? (
-                <div className="aspect-square sm:aspect-[4/3] bg-rose-50/60 rounded-xl border border-rose-200 flex flex-col items-center justify-center text-center gap-3 p-5">
-                  <p className="text-[14px] text-rose-700">{item.errorMessage || 'ไม่สำเร็จ'}</p>
-                  <button type="button" onClick={() => runOne(item.id)} className="btn btn-ink text-[13px] px-4 py-2"><RefreshCw className="w-3.5 h-3.5" /> ลองใหม่</button>
-                </div>
-              ) : (
-                <div className="relative aspect-square sm:aspect-[4/3] bg-cream-2 rounded-xl border border-line overflow-hidden flex items-center justify-center group">
-                  <img src={item.originalUrl} alt="" className="max-h-full max-w-full object-contain p-2" />
-                  <div className="absolute inset-0 bg-ink/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button type="button" onClick={() => runOne(item.id)} disabled={!colorRef} className="btn btn-primary text-[13px] px-5 py-2.5 disabled:opacity-60"><Sparkles className="w-3.5 h-3.5 fill-white" /> เปลี่ยนสีรูปนี้</button>
-                  </div>
-                </div>
-              )}
-
-              {item.status === 'completed' && (
-                <div className="flex justify-end">
-                  <button type="button" onClick={() => downloadOne(item)} className="btn btn-ghost text-[13px] px-4 py-2"><Download className="w-3.5 h-3.5" /> ดาวน์โหลด</button>
-                </div>
-              )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {colors.map((color, ci) => {
+                  const job = jobs[jobKey(product.id, color.id)];
+                  return (
+                    <div key={color.id} className="rounded-xl border border-line bg-surface overflow-hidden">
+                      <div className="relative aspect-square bg-cream-2 flex items-center justify-center">
+                        {job?.status === 'completed' && job.resultUrl ? (
+                          <img src={job.resultUrl} alt="" className="w-full h-full object-contain" />
+                        ) : job?.status === 'processing' ? (
+                          <Loader2 className="w-6 h-6 text-gold animate-spin" />
+                        ) : job?.status === 'error' ? (
+                          <div className="flex flex-col items-center gap-1.5 p-2 text-center">
+                            <AlertTriangle className="w-5 h-5 text-rose-500" />
+                            <button type="button" onClick={() => retryOne(product, color)} className="text-[12px] text-gold-dark hover:underline flex items-center gap-1"><RefreshCw className="w-3 h-3" /> ลองใหม่</button>
+                          </div>
+                        ) : (
+                          <img src={product.url} alt="" className="w-full h-full object-contain opacity-30" />
+                        )}
+                        {/* color swatch */}
+                        <img src={color.url} alt="" className="absolute bottom-1.5 left-1.5 w-7 h-7 rounded-md object-cover border-2 border-white shadow" title={`สี ${ci + 1}`} />
+                        <span className="absolute top-1.5 left-1.5 bg-ink/70 text-white text-[11px] font-bold px-1.5 rounded-full">สี {ci + 1}</span>
+                      </div>
+                      {job?.status === 'completed' && (
+                        <button type="button" onClick={() => downloadOne(product, color, ci)} className="w-full flex items-center justify-center gap-1.5 py-2 text-[13px] text-muted hover:text-gold hover:bg-cream-2 border-t border-line transition-colors cursor-pointer">
+                          <Download className="w-3.5 h-3.5" /> โหลด
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
