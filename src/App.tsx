@@ -12,6 +12,8 @@ import { BatchImageList } from './components/BatchImageList';
 import { LightboxModal } from './components/LightboxModal';
 import { Stepper, StepHeader, StepStatus } from './components/Steps';
 import { ToneMatch } from './components/ToneMatch';
+import { ListingStudio } from './components/ListingStudio';
+import { ColorChange } from './components/ColorChange';
 import { sanitizeFileName } from './utils/filename';
 import { ProductImageItem, StudioConfig, StudioPreset } from './types';
 import { buildPrompt, buildReferencePrompt, createUserPreset, STUDIO_PRESETS } from './data/presets';
@@ -61,7 +63,7 @@ export default function App() {
   const [productName, setProductName] = useState('');
 
   // Which top-level mode is showing: AI background studio, or the tone-match tool.
-  const [view, setView] = useState<'studio' | 'tone'>('studio');
+  const [view, setView] = useState<'studio' | 'tone' | 'listing' | 'color'>('studio');
 
   // Check health on mount
   useEffect(() => {
@@ -322,22 +324,26 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         {/* Mode Tabs */}
         <div className="flex justify-center">
-          <div className="inline-flex items-center gap-1 bg-white border border-line rounded-full p-1 shadow-sm">
-            {([
-              { id: 'studio', label: '✨ สร้างฉากหลัง AI' },
-              { id: 'tone', label: '🎨 ปรับโทนพื้นหลัง' },
-            ] as const).map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setView(t.id)}
-                className={`px-5 py-2.5 rounded-full text-[15px] font-semibold transition-all cursor-pointer ${
-                  view === t.id ? 'bg-ink text-cream shadow-sm' : 'text-muted hover:text-ink'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="max-w-full overflow-x-auto">
+            <div className="inline-flex items-center gap-1 bg-white border border-line rounded-full p-1 shadow-sm">
+              {([
+                { id: 'studio', label: '✨ ฉากหลัง AI' },
+                { id: 'tone', label: '🎨 ปรับโทน' },
+                { id: 'color', label: '🖌️ เปลี่ยนสี' },
+                { id: 'listing', label: '📝 ก็อปปี้ขาย' },
+              ] as const).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setView(t.id)}
+                  className={`whitespace-nowrap px-4 py-2.5 rounded-full text-[14px] font-semibold transition-all cursor-pointer ${
+                    view === t.id ? 'bg-ink text-cream shadow-sm' : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -351,16 +357,16 @@ export default function App() {
               <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gold/12 text-gold">
                 <Sparkles className="w-4 h-4" />
               </span>
-              <h2 className="font-serif-studio text-3xl italic font-light tracking-wide text-ink">
-                FLARE STUDIO — <span className="not-italic font-semibold text-[16px] tracking-[0.2em] text-muted uppercase">Professional AI Photography &amp; Background Replacement</span>
+              <h2 className="font-serif-studio text-2xl italic font-light tracking-wide text-ink">
+                FLARE STUDIO — <span className="not-italic font-semibold text-[15px] tracking-[0.2em] text-muted uppercase">Professional AI Photography &amp; Background Replacement</span>
               </h2>
             </div>
-            <p className="text-[18px] text-muted leading-relaxed max-w-3xl">
+            <p className="text-[16px] text-muted leading-relaxed max-w-3xl">
               ระบบเปลี่ยนฉากหลังให้สินค้าด้วยโมเดล Gemini 3.1 Flash Image โดยรักษารูปลักษณ์สินค้าต้นแบบไว้ 100% พร้อมสร้างฉากหลังสตูดิโอสีขาว แสงขาวอุ่น และเงาสะท้อนระดับช่างภาพมืออาชีพ
             </p>
           </div>
 
-          <div className="relative z-10 shrink-0 inline-flex items-center gap-2 rounded-full bg-gold/10 border border-gold/30 px-4 py-2 text-[15px] uppercase font-bold tracking-widest text-gold-dark">
+          <div className="relative z-10 shrink-0 inline-flex items-center gap-2 rounded-full bg-gold/10 border border-gold/30 px-4 py-2 text-[14px] uppercase font-bold tracking-widest text-gold-dark">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>PRODUCT PRESERVED</span>
           </div>
@@ -417,7 +423,7 @@ export default function App() {
           />
           {items.length === 0 && (
             <div className="rounded-2xl border-2 border-dashed border-line p-8 text-center">
-              <p className="text-[17px] text-muted">
+              <p className="text-[15px] text-muted">
                 ยังไม่มีรูปในคิว — อัปโหลดรูปในขั้นตอนที่ 2 ก่อน แล้วผลลัพธ์จะแสดงที่นี่
               </p>
             </div>
@@ -428,6 +434,16 @@ export default function App() {
         {/* ===== TONE MATCH VIEW ===== */}
         <div className={view === 'tone' ? '' : 'hidden'}>
           <ToneMatch completedItems={completedItemsList} onToast={showToast} />
+        </div>
+
+        {/* ===== COLOR CHANGE VIEW ===== */}
+        <div className={view === 'color' ? '' : 'hidden'}>
+          <ColorChange onToast={showToast} />
+        </div>
+
+        {/* ===== LISTING STUDIO VIEW ===== */}
+        <div className={view === 'listing' ? '' : 'hidden'}>
+          <ListingStudio onToast={showToast} />
         </div>
       </main>
 
@@ -443,7 +459,7 @@ export default function App() {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 animate-rise">
-          <div className={`flex items-center gap-3 rounded-xl px-5 py-3.5 border bg-white shadow-studio-lg text-[17px] font-semibold tracking-wide ${
+          <div className={`flex items-center gap-3 rounded-xl px-5 py-3.5 border bg-white shadow-studio-lg text-[15px] font-semibold tracking-wide ${
             toast.type === 'success'
               ? 'border-emerald-200 text-emerald-700'
               : toast.type === 'error'

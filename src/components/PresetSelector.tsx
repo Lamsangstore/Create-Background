@@ -128,19 +128,19 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
             <Sliders className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-[17px] uppercase tracking-[0.2em] font-bold text-ink">ตั้งค่าฉากหลังสตูดิโอ &amp; AI DIRECTIVE</h2>
-            <p className="text-[17px] text-muted mt-0.5">เลือกสไตล์สตูดิโอ ประเภทสินค้า สัดส่วนภาพ และความละเอียดเรนเดอร์</p>
+            <h2 className="text-[15px] uppercase tracking-[0.2em] font-bold text-ink">ตั้งค่าฉากหลังสตูดิโอ &amp; AI DIRECTIVE</h2>
+            <p className="text-[15px] text-muted mt-0.5">เลือกสไตล์สตูดิโอ ประเภทสินค้า สัดส่วนภาพ และความละเอียดเรนเดอร์</p>
           </div>
         </div>
 
         {/* Product Type Selection */}
         <div className="flex items-center gap-2.5 bg-white px-3.5 py-2 rounded-full border border-line shadow-sm">
           <Tag className="w-3.5 h-3.5 text-gold" />
-          <span className="text-[15px] uppercase tracking-widest text-muted">ประเภทสินค้า:</span>
+          <span className="text-[14px] uppercase tracking-widest text-muted">ประเภทสินค้า:</span>
           <select
             value={config.productType}
             onChange={(e) => handleProductTypeChange(e.target.value as ProductType)}
-            className="bg-transparent text-[17px] text-ink font-medium focus:outline-none cursor-pointer"
+            className="bg-transparent text-[15px] text-ink font-medium focus:outline-none cursor-pointer"
           >
             {PRODUCT_TYPES.map((type) => (
               <option key={type.id} value={type.id} className="bg-white text-ink">
@@ -154,10 +154,10 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
       {/* Preset Cards Selection (reference upload is the last card) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <label className="text-[15px] uppercase tracking-[0.2em] font-bold text-muted block">
+          <label className="text-[14px] uppercase tracking-[0.2em] font-bold text-muted block">
             สไตล์จัดแสงและฉากหลังสตูดิโอ (STUDIO PRESETS)
           </label>
-          <span className="text-[15px] uppercase tracking-widest text-gold-dark bg-gold/10 border border-gold/30 rounded-full px-2.5 py-0.5">
+          <span className="text-[14px] uppercase tracking-widest text-gold-dark bg-gold/10 border border-gold/30 rounded-full px-2.5 py-0.5">
             {activeModeLabel}
           </span>
         </div>
@@ -201,10 +201,10 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="text-[17px] font-semibold tracking-wide text-ink truncate">
+                    <span className="text-[15px] font-semibold tracking-wide text-ink truncate">
                       {preset.titleTh}
                     </span>
-                    <span className={`text-[14px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full border shrink-0 ${
+                    <span className={`text-[13px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full border shrink-0 ${
                       preset.isUser
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : isSelected ? 'bg-gold/12 text-gold-dark border-gold/30' : 'bg-cream-2 text-muted border-line'
@@ -212,14 +212,14 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                       {preset.badge}
                     </span>
                   </div>
-                  <p className="text-[16px] line-clamp-2 leading-relaxed text-muted">
+                  <p className="text-[15px] line-clamp-2 leading-relaxed text-muted">
                     {preset.descriptionTh}
                   </p>
                 </div>
 
                 {isSelected && (
                   <div className="mt-3 flex items-center justify-end">
-                    <span className="inline-flex items-center gap-1 text-[14px] uppercase font-bold tracking-widest bg-gold text-white rounded-full px-2.5 py-0.5">
+                    <span className="inline-flex items-center gap-1 text-[13px] uppercase font-bold tracking-widest bg-gold text-white rounded-full px-2.5 py-0.5">
                       <Check className="w-3 h-3" /> ACTIVE PRESET
                     </span>
                   </div>
@@ -268,19 +268,19 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-cream-2/50 text-gold">
                     <ImagePlus className="w-6 h-6" />
-                    <span className="text-[14px] uppercase tracking-widest font-bold text-ink">อัปโหลดรูป</span>
-                    <span className="text-[14px] text-subtle uppercase tracking-widest">PNG · JPG · WEBP</span>
+                    <span className="text-[13px] uppercase tracking-widest font-bold text-ink">อัปโหลดรูป</span>
+                    <span className="text-[13px] text-subtle uppercase tracking-widest">PNG · JPG · WEBP</span>
                   </div>
                 )}
               </div>
 
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="text-[17px] font-semibold tracking-wide text-ink">รูปอ้างอิง (Reference)</span>
-                <span className="text-[14px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full border shrink-0 bg-gold/12 text-gold-dark border-gold/30">
+                <span className="text-[15px] font-semibold tracking-wide text-ink">รูปอ้างอิง (Reference)</span>
+                <span className="text-[13px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full border shrink-0 bg-gold/12 text-gold-dark border-gold/30">
                   REFERENCE
                 </span>
               </div>
-              <p className="text-[16px] line-clamp-2 leading-relaxed text-muted">
+              <p className="text-[15px] line-clamp-2 leading-relaxed text-muted">
                 {config.referenceImage
                   ? 'ให้ AI เลียนแบบฉากหลังและการจัดแสงจากรูปนี้'
                   : 'อัปโหลดรูปที่มีฉากหลัง/แสงที่ต้องการ ให้ AI เลียนแบบมาใส่สินค้า'}
@@ -289,7 +289,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
 
             {config.isReferenceActive && (
               <div className="mt-3 flex items-center justify-end">
-                <span className="inline-flex items-center gap-1 text-[14px] uppercase font-bold tracking-widest bg-gold text-white rounded-full px-2.5 py-0.5">
+                <span className="inline-flex items-center gap-1 text-[13px] uppercase font-bold tracking-widest bg-gold text-white rounded-full px-2.5 py-0.5">
                   <Check className="w-3 h-3" /> ACTIVE
                 </span>
               </div>
@@ -310,7 +310,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-5 border-t border-line">
         {/* Output Resolution */}
         <div className="space-y-2.5">
-          <label className="text-[15px] uppercase tracking-[0.2em] font-bold text-muted flex items-center gap-1.5">
+          <label className="text-[14px] uppercase tracking-[0.2em] font-bold text-muted flex items-center gap-1.5">
             <Monitor className="w-3.5 h-3.5 text-gold" />
             <span>RESOLUTION OUTPUT</span>
           </label>
@@ -322,7 +322,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                   key={size}
                   type="button"
                   onClick={() => handleImageSizeChange(size)}
-                  className={`py-2 text-center text-[15px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
+                  className={`py-2 text-center text-[14px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
                     active
                       ? 'bg-ink text-cream border-ink shadow-sm'
                       : 'bg-white text-muted border-line hover:border-gold/40 hover:text-ink'
@@ -337,7 +337,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
 
         {/* Aspect Ratio */}
         <div className="space-y-2.5">
-          <label className="text-[15px] uppercase tracking-[0.2em] font-bold text-muted flex items-center gap-1.5">
+          <label className="text-[14px] uppercase tracking-[0.2em] font-bold text-muted flex items-center gap-1.5">
             <Ratio className="w-3.5 h-3.5 text-gold" />
             <span>ASPECT RATIO</span>
           </label>
@@ -355,7 +355,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                   type="button"
                   onClick={() => handleAspectRatioChange(ratio)}
                   title={`${ratio} · ${orientation}`}
-                  className={`flex flex-col items-center justify-center gap-1.5 py-2.5 text-center text-[15px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
+                  className={`flex flex-col items-center justify-center gap-1.5 py-2.5 text-center text-[14px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
                     active
                       ? 'bg-ink text-cream border-ink shadow-sm'
                       : 'bg-white text-muted border-line hover:border-gold/40 hover:text-ink'
@@ -381,15 +381,15 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
         <button
           type="button"
           onClick={() => setShowPromptDetails(!showPromptDetails)}
-          className="w-full flex items-center justify-between py-1 text-[17px] font-medium text-ink/80 hover:text-ink transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between py-1 text-[15px] font-medium text-ink/80 hover:text-ink transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2">
             <Edit3 className="w-4 h-4 text-gold" />
-            <span className="text-[15px] uppercase tracking-[0.2em] font-bold">
+            <span className="text-[14px] uppercase tracking-[0.2em] font-bold">
               AI DIRECTIVE PROMPT ({config.isReferenceActive ? 'REFERENCE ACTIVE' : config.isCustomPromptActive ? 'CUSTOM ACTIVE' : 'PRESET ACTIVE'})
             </span>
           </div>
-          <div className="flex items-center gap-1 text-[15px] uppercase tracking-widest text-muted">
+          <div className="flex items-center gap-1 text-[14px] uppercase tracking-widest text-muted">
             <span>{showPromptDetails ? 'HIDE DIRECTIVE' : 'INSPECT / EDIT PROMPT'}</span>
             {showPromptDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </div>
@@ -398,7 +398,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
         {showPromptDetails && (
           <div className="mt-3 space-y-3 bg-cream-2/50 p-4 rounded-2xl border border-line">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[15px] uppercase tracking-widest text-muted">
+              <span className="text-[14px] uppercase tracking-widest text-muted">
                 {config.isReferenceActive
                   ? 'Reference prompt sent with BOTH images to Gemini:'
                   : 'Exact English Prompt sent to Gemini API:'}
@@ -407,7 +407,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                 <button
                   type="button"
                   onClick={handleResetToPreset}
-                  className="flex items-center gap-1 text-[15px] uppercase tracking-widest text-gold-dark hover:underline cursor-pointer shrink-0"
+                  className="flex items-center gap-1 text-[14px] uppercase tracking-widest text-gold-dark hover:underline cursor-pointer shrink-0"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>RESTORE DEFAULT PRESET</span>
@@ -421,7 +421,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
               value={config.isCustomPromptActive ? config.customPrompt : activePromptText}
               onChange={(e) => handleCustomPromptChange(e.target.value)}
               placeholder="Enter custom AI prompt instructions..."
-              className="w-full bg-white border border-line rounded-xl p-3.5 text-[17px] font-mono text-ink focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15 leading-relaxed resize-none read-only:text-muted read-only:bg-cream-2/60"
+              className="w-full bg-white border border-line rounded-xl p-3.5 text-[15px] font-mono text-ink focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15 leading-relaxed resize-none read-only:text-muted read-only:bg-cream-2/60"
             />
 
             {/* Save custom prompt as a new preset */}
@@ -434,19 +434,19 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                     onChange={(e) => setNewPresetName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleConfirmSavePreset(); if (e.key === 'Escape') setIsSavingPreset(false); }}
                     placeholder="ตั้งชื่อพรีเซ็ต เช่น สตูดิโอสีฟ้า..."
-                    className="flex-1 min-w-[180px] bg-white border border-line rounded-lg px-3 py-2 text-[17px] text-ink focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15"
+                    className="flex-1 min-w-[180px] bg-white border border-line rounded-lg px-3 py-2 text-[15px] text-ink focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/15"
                   />
                   <button
                     type="button"
                     onClick={handleConfirmSavePreset}
-                    className="btn btn-primary text-[15px] uppercase tracking-widest px-3.5 py-2"
+                    className="btn btn-primary text-[14px] uppercase tracking-widest px-3.5 py-2"
                   >
                     <Save className="w-3.5 h-3.5" /> บันทึก
                   </button>
                   <button
                     type="button"
                     onClick={() => { setIsSavingPreset(false); setNewPresetName(''); }}
-                    className="btn btn-ghost text-[15px] uppercase tracking-widest px-3.5 py-2"
+                    className="btn btn-ghost text-[14px] uppercase tracking-widest px-3.5 py-2"
                   >
                     ยกเลิก
                   </button>
@@ -455,14 +455,14 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsSavingPreset(true)}
-                  className="btn btn-ghost text-[15px] uppercase tracking-widest px-3.5 py-2"
+                  className="btn btn-ghost text-[14px] uppercase tracking-widest px-3.5 py-2"
                 >
                   <Save className="w-3.5 h-3.5 text-gold" /> บันทึกพรอมนี้เป็นพรีเซ็ต
                 </button>
               )
             )}
 
-            <p className="text-[16px] text-subtle italic">
+            <p className="text-[15px] text-subtle italic">
               {config.isReferenceActive
                 ? '* กำลังใช้รูปอ้างอิง — AI จะเลียนแบบฉากหลังและการจัดแสงจากรูปที่อัปโหลด (คำสั่งนี้แก้ไขไม่ได้ในโหมด Reference)'
                 : '* พิมพ์แก้คำสั่งได้ตามต้องการ แล้วกด "บันทึกเป็นพรีเซ็ต" เพื่อเก็บไว้ใช้ซ้ำ (พรีเซ็ตจะไปโผล่ในกริดด้านบน)'}
