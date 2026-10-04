@@ -92,7 +92,7 @@ const EditableField: React.FC<{
       <div className="flex items-center justify-between gap-2">
         <span className="text-[14px] font-semibold text-muted">
           {label}
-          {max != null && <span className={`ml-2 text-[13px] ${over ? 'text-rose-600' : 'text-subtle'}`}>{value.length}/{max}</span>}
+          {max != null && <span className={`ml-2 text-[13px] ${over ? 'text-red-600' : 'text-subtle'}`}>{value.length}/{max}</span>}
         </span>
         <CopyBtn getValue={() => value} />
       </div>
@@ -421,7 +421,7 @@ Return ONLY this JSON, no markdown:
                 <img src={f.dataURL} alt="" className="w-full h-full object-cover" />
                 <span className="absolute left-1 top-1 bg-ink/70 text-white text-[12px] font-bold px-1.5 rounded-full">{i + 1}</span>
                 <button type="button" onClick={() => removeFile(f.id)}
-                  className="absolute right-1 top-1 w-5 h-5 rounded-full bg-ink/70 text-white flex items-center justify-center hover:bg-rose-500 cursor-pointer">
+                  className="absolute right-1 top-1 w-5 h-5 rounded-full bg-ink/70 text-white flex items-center justify-center hover:bg-red-500 cursor-pointer">
                   <X className="w-3 h-3" />
                 </button>
               </div>
@@ -445,7 +445,7 @@ Return ONLY this JSON, no markdown:
         {progress && (
           <div className="space-y-2">
             <div className="h-2 rounded-full bg-cream-2 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-gold to-[#d9a85f] transition-all" style={{ width: `${progress.pct}%` }} />
+              <div className="h-full bg-gradient-to-r from-gold to-brand-400 transition-all" style={{ width: `${progress.pct}%` }} />
             </div>
             <div className="flex items-center gap-2 text-[14px] text-muted">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-gold" />{progress.label}
@@ -454,7 +454,7 @@ Return ONLY this JSON, no markdown:
         )}
 
         {error && (
-          <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 text-[14px] flex items-start gap-2">
+          <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-[14px] flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />{error}
           </div>
         )}
@@ -477,7 +477,7 @@ Return ONLY this JSON, no markdown:
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button type="button" onClick={() => openSaved(s)} className="btn btn-ghost text-[13px] px-3 py-1.5"><FolderOpen className="w-3.5 h-3.5" /> เปิด</button>
-                  <button type="button" onClick={() => deleteSaved(s.id)} className="p-2 rounded-lg text-muted hover:text-rose-600 hover:bg-rose-50 border border-line hover:border-rose-200 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                  <button type="button" onClick={() => deleteSaved(s.id)} className="p-2 rounded-lg text-muted hover:text-red-600 hover:bg-red-50 border border-line hover:border-red-200 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
@@ -496,8 +496,8 @@ Return ONLY this JSON, no markdown:
 
           {result.basics.warnings.length > 0 && (
             <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4">
-              <h4 className="text-[15px] font-bold text-amber-800 flex items-center gap-2 mb-1.5"><AlertTriangle className="w-4 h-4" /> จุดที่ต้องเช็คก่อนปล่อยขาย</h4>
-              <ul className="list-disc pl-5 text-[14px] text-amber-800 space-y-1">
+              <h4 className="text-[15px] font-bold text-amber-700 flex items-center gap-2 mb-1.5"><AlertTriangle className="w-4 h-4" /> จุดที่ต้องเช็คก่อนปล่อยขาย</h4>
+              <ul className="list-disc pl-5 text-[14px] text-amber-700 space-y-1">
                 {result.basics.warnings.map((w, i) => <li key={i}>{w}</li>)}
               </ul>
             </div>

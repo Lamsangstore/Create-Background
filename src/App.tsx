@@ -337,7 +337,7 @@ export default function App() {
                   type="button"
                   onClick={() => setView(t.id)}
                   className={`whitespace-nowrap px-4 py-2.5 rounded-full text-[14px] font-semibold transition-all cursor-pointer ${
-                    view === t.id ? 'bg-ink text-cream shadow-sm' : 'text-muted hover:text-ink'
+                    view === t.id ? 'bg-gold text-cream shadow-sm' : 'text-muted hover:text-ink'
                   }`}
                 >
                   {t.label}
@@ -463,13 +463,13 @@ export default function App() {
             toast.type === 'success'
               ? 'border-emerald-200 text-emerald-700'
               : toast.type === 'error'
-              ? 'border-rose-200 text-rose-700'
+              ? 'border-red-200 text-red-700'
               : 'border-line text-ink'
           }`}>
             {toast.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             ) : toast.type === 'error' ? (
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
             ) : (
               <Info className="w-4 h-4 text-gold shrink-0" />
             )}

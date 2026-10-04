@@ -182,7 +182,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onDeletePreset(preset.id); }}
-                    className="absolute top-2 right-2 z-10 w-6 h-6 rounded-md bg-white/90 border border-line flex items-center justify-center text-muted hover:text-rose-600 hover:border-rose-200 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    className="absolute top-2 right-2 z-10 w-6 h-6 rounded-md bg-white/90 border border-line flex items-center justify-center text-muted hover:text-red-600 hover:border-red-200 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     title="ลบพรีเซ็ตนี้"
                   >
                     <X className="w-3 h-3" />
@@ -258,7 +258,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleRemoveReference(); }}
-                        className="w-6 h-6 rounded-md bg-white/90 border border-line flex items-center justify-center text-muted hover:text-rose-600 cursor-pointer"
+                        className="w-6 h-6 rounded-md bg-white/90 border border-line flex items-center justify-center text-muted hover:text-red-600 cursor-pointer"
                         title="ลบรูป"
                       >
                         <X className="w-3 h-3" />
@@ -324,7 +324,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                   onClick={() => handleImageSizeChange(size)}
                   className={`py-2 text-center text-[14px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
                     active
-                      ? 'bg-ink text-cream border-ink shadow-sm'
+                      ? 'bg-gold text-cream border-gold shadow-sm'
                       : 'bg-white text-muted border-line hover:border-gold/40 hover:text-ink'
                   }`}
                 >
@@ -357,7 +357,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
                   title={`${ratio} · ${orientation}`}
                   className={`flex flex-col items-center justify-center gap-1.5 py-2.5 text-center text-[14px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
                     active
-                      ? 'bg-ink text-cream border-ink shadow-sm'
+                      ? 'bg-gold text-cream border-gold shadow-sm'
                       : 'bg-white text-muted border-line hover:border-gold/40 hover:text-ink'
                   }`}
                 >

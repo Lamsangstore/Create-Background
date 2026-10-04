@@ -25,7 +25,7 @@ export const Stepper: React.FC<{ statuses: StepStatus[] }> = ({ statuses }) => {
                 <div
                   className={`w-9 h-9 rounded-full flex items-center justify-center text-[16px] font-bold border-2 transition-all ${
                     isDone
-                      ? 'bg-gold border-gold text-white shadow-[0_6px_16px_-6px_rgba(199,154,91,0.6)]'
+                      ? 'bg-gold border-gold text-white shadow-[0_6px_16px_-6px_rgba(168,133,63,0.6)]'
                       : isActive
                       ? 'bg-white border-gold text-gold-dark ring-4 ring-gold/15'
                       : 'bg-cream-2 border-line text-subtle'
@@ -66,7 +66,7 @@ export const StepHeader: React.FC<{ step: number; title: string; subtitle?: stri
 }) => {
   return (
     <div className="flex items-center gap-3.5 px-1">
-      <div className="w-9 h-9 rounded-full bg-gradient-to-b from-[#d3a866] to-[#c79a5b] text-white flex items-center justify-center text-[16px] font-bold shadow-[0_6px_16px_-6px_rgba(199,154,91,0.6)] shrink-0">
+      <div className="w-9 h-9 rounded-full bg-gradient-to-b from-brand-500 to-brand-600 text-white flex items-center justify-center text-[16px] font-bold shadow-[0_6px_16px_-6px_rgba(168,133,63,0.6)] shrink-0">
         {step}
       </div>
       <div>

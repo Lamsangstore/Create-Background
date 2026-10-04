@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
-/* ---- Warm-white studio design tokens ------------------------------------ */
+/* ---- Lamsang theme tokens (see LAMSANG-THEME.md) ------------------------- */
 @theme {
-  --color-cream: #faf7f2;
-  --color-cream-2: #f4efe6;
+  --font-sans: 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+
+  --color-brand-50: #faf6ec;
+  --color-brand-100: #f3ead4;
+  --color-brand-200: #e7d5a8;
+  --color-brand-300: #d9bf7d;
+  --color-brand-400: #ccac60;
+  --color-brand-500: #bf9c4f;
+  --color-brand-600: #a8853f;
+  --color-brand-700: #886a32;
+  --color-brand-800: #6b5329;
+  --color-brand-900: #4a3a1d;
+
+  --color-panel-900: #1c1b19;
+  --color-panel-800: #2a2825;
+  --color-panel-700: #3a3833;
+
+  --color-cream: #f8fafc;
+  --color-cream-2: #f1f5f9;
   --color-surface: #ffffff;
-  --color-ink: #1c1917;
-  --color-muted: #78716c;
-  --color-subtle: #a8a29e;
-  --color-line: #ece7de;
-  --color-gold: #c79a5b;
-  --color-gold-dark: #b0863e;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-subtle: #94a3b8;
+  --color-line: #e2e8f0;
+  --color-gold: var(--color-brand-600);
+  --color-gold-dark: var(--color-brand-700);
 }
 
 @layer base {
   body {
-    font-family: 'Manrope', 'Noto Sans Thai', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
     color: var(--color-ink);
     background-color: var(--color-cream);
-    background-image:
-      radial-gradient(1200px 620px at 12% -12%, rgba(199, 154, 91, 0.10), transparent 60%),
-      radial-gradient(1000px 520px at 100% -4%, rgba(199, 154, 91, 0.06), transparent 55%);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -33,7 +47,7 @@
     background-color: var(--color-surface);
     border: 1px solid var(--color-line);
     border-radius: 1rem;
-    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 12px 32px -16px rgba(28, 25, 23, 0.16);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -16px rgba(15, 23, 42, 0.16);
   }
 
   .btn {
@@ -52,27 +66,27 @@
   .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
   .btn-primary {
-    background: linear-gradient(180deg, #d3a866, #c79a5b);
+    background: var(--color-brand-600);
     color: #fff;
-    box-shadow: 0 6px 16px -6px rgba(199, 154, 91, 0.6);
+    box-shadow: 0 6px 16px -6px rgba(168, 133, 63, 0.6);
   }
   .btn-primary:hover:not(:disabled) {
-    filter: brightness(1.04);
-    box-shadow: 0 10px 22px -8px rgba(199, 154, 91, 0.7);
+    background: var(--color-brand-700);
+    box-shadow: 0 10px 22px -8px rgba(168, 133, 63, 0.7);
   }
 
-  .btn-ink { background: var(--color-ink); color: var(--color-cream); }
-  .btn-ink:hover:not(:disabled) { background: #2a2622; }
+  .btn-ink { background: var(--color-panel-900); color: var(--color-cream); }
+  .btn-ink:hover:not(:disabled) { background: var(--color-panel-800); }
 
   .btn-ghost { background: #fff; color: var(--color-ink); border: 1px solid var(--color-line); }
-  .btn-ghost:hover:not(:disabled) { background: var(--color-cream-2); border-color: rgba(199, 154, 91, 0.4); }
+  .btn-ghost:hover:not(:disabled) { background: var(--color-cream-2); border-color: var(--color-brand-200); }
 }
 
 @layer utilities {
-  .font-serif-studio { font-family: 'Cormorant Garamond', serif; }
+  .font-serif-studio { font-family: 'Noto Sans Thai', system-ui, -apple-system, sans-serif; }
 
-  .shadow-studio { box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 12px 32px -16px rgba(28, 25, 23, 0.16); }
-  .shadow-studio-lg { box-shadow: 0 4px 8px rgba(28, 25, 23, 0.05), 0 28px 56px -18px rgba(28, 25, 23, 0.22); }
+  .shadow-studio { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -16px rgba(15, 23, 42, 0.16); }
+  .shadow-studio-lg { box-shadow: 0 4px 8px rgba(15, 23, 42, 0.05), 0 28px 56px -18px rgba(15, 23, 42, 0.22); }
 
   @keyframes rise {
     from { opacity: 0; transform: translateY(10px); }

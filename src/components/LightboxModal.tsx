@@ -30,7 +30,7 @@ export const LightboxModal: React.FC<LightboxModalProps> = ({
       type="button"
       onClick={() => setViewMode(mode)}
       className={`px-3 py-1.5 rounded-lg text-[14px] uppercase font-bold tracking-widest flex items-center gap-1.5 transition-all cursor-pointer ${
-        viewMode === mode ? 'bg-ink text-cream' : 'text-muted hover:text-ink'
+        viewMode === mode ? 'bg-gold text-cream' : 'text-muted hover:text-ink'
       }`}
     >
       {icon}

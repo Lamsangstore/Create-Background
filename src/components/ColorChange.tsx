@@ -240,7 +240,7 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
             <div className="grid grid-cols-4 gap-2">
               {(['512px', '1K', '2K', '4K'] as ImageSize[]).map((s) => (
                 <button key={s} type="button" onClick={() => setImageSize(s)}
-                  className={`py-2 text-[13px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${imageSize === s ? 'bg-ink text-cream border-ink' : 'bg-white text-muted border-line hover:border-gold/40 hover:text-ink'}`}>
+                  className={`py-2 text-[13px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${imageSize === s ? 'bg-gold text-cream border-gold' : 'bg-white text-muted border-line hover:border-gold/40 hover:text-ink'}`}>
                   {s === '1K' ? '1K' : s === '2K' ? '2K' : s === '4K' ? '4K' : '512'}
                 </button>
               ))}
@@ -251,7 +251,7 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
             <div className="grid grid-cols-5 gap-1.5">
               {(['1:1', '3:4', '4:3', '9:16', '16:9'] as AspectRatio[]).map((r) => (
                 <button key={r} type="button" onClick={() => setAspectRatio(r)}
-                  className={`py-2 text-[13px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${aspectRatio === r ? 'bg-ink text-cream border-ink' : 'bg-white text-muted border-line hover:border-gold/40 hover:text-ink'}`}>
+                  className={`py-2 text-[13px] font-bold uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${aspectRatio === r ? 'bg-gold text-cream border-gold' : 'bg-white text-muted border-line hover:border-gold/40 hover:text-ink'}`}>
                   {r}
                 </button>
               ))}
@@ -273,7 +273,7 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
             <div key={c.id} className="relative aspect-square rounded-xl overflow-hidden border border-line bg-cream-2">
               <img src={c.url} alt="" className="w-full h-full object-cover" />
               <span className="absolute left-1 top-1 bg-ink/70 text-white text-[12px] font-bold px-1.5 rounded-full">{i + 1}</span>
-              <button type="button" onClick={() => removeColor(c.id)} className="absolute right-1 top-1 w-5 h-5 rounded-full bg-ink/70 text-white flex items-center justify-center hover:bg-rose-500 cursor-pointer"><X className="w-3 h-3" /></button>
+              <button type="button" onClick={() => removeColor(c.id)} className="absolute right-1 top-1 w-5 h-5 rounded-full bg-ink/70 text-white flex items-center justify-center hover:bg-red-500 cursor-pointer"><X className="w-3 h-3" /></button>
             </div>
           ))}
           <button type="button" onClick={() => colorInputRef.current?.click()}
@@ -299,7 +299,7 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
               <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden border border-line bg-cream-2">
                 <img src={p.url} alt="" className="w-full h-full object-cover" />
                 <span className="absolute left-1 top-1 bg-ink/70 text-white text-[12px] font-bold px-1.5 rounded-full">{i + 1}</span>
-                <button type="button" onClick={() => removeProduct(p.id)} className="absolute right-1 top-1 w-5 h-5 rounded-full bg-ink/70 text-white flex items-center justify-center hover:bg-rose-500 cursor-pointer"><X className="w-3 h-3" /></button>
+                <button type="button" onClick={() => removeProduct(p.id)} className="absolute right-1 top-1 w-5 h-5 rounded-full bg-ink/70 text-white flex items-center justify-center hover:bg-red-500 cursor-pointer"><X className="w-3 h-3" /></button>
               </div>
             ))}
           </div>
@@ -359,7 +359,7 @@ export const ColorChange: React.FC<ColorChangeProps> = ({ onToast }) => {
                           <Loader2 className="w-6 h-6 text-gold animate-spin" />
                         ) : job?.status === 'error' ? (
                           <div className="flex flex-col items-center gap-1.5 p-2 text-center">
-                            <AlertTriangle className="w-5 h-5 text-rose-500" />
+                            <AlertTriangle className="w-5 h-5 text-red-500" />
                             <button type="button" onClick={() => retryOne(product, color)} className="text-[12px] text-gold-dark hover:underline flex items-center gap-1"><RefreshCw className="w-3 h-3" /> ลองใหม่</button>
                           </div>
                         ) : (

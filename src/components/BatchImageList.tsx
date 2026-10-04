@@ -97,7 +97,7 @@ export const BatchImageList: React.FC<BatchImageListProps> = ({
             <button
               type="button"
               onClick={onClearAll}
-              className="p-2.5 rounded-lg text-muted hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+              className="p-2.5 rounded-lg text-muted hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer"
               title="ลบรูปภาพทั้งหมด"
             >
               <Trash2 className="w-4 h-4" />
@@ -137,7 +137,7 @@ export const BatchImageList: React.FC<BatchImageListProps> = ({
                 : item.status === 'completed'
                 ? 'border-line shadow-studio hover:border-gold/40'
                 : item.status === 'error'
-                ? 'border-rose-200 bg-rose-50/40'
+                ? 'border-red-200 bg-red-50/40'
                 : 'border-line hover:border-gold/40 hover:shadow-studio'
             }`}
           >
@@ -167,7 +167,7 @@ export const BatchImageList: React.FC<BatchImageListProps> = ({
                 )}
 
                 {item.status === 'error' && (
-                  <span className="bg-rose-50 text-rose-700 text-[13px] uppercase tracking-widest px-2.5 py-1 rounded-full border border-rose-200 flex items-center gap-1 font-bold">
+                  <span className="bg-red-50 text-red-700 text-[13px] uppercase tracking-widest px-2.5 py-1 rounded-full border border-red-200 flex items-center gap-1 font-bold">
                     <AlertTriangle className="w-3 h-3" />
                     <span>ล้มเหลว (FAILED)</span>
                   </span>
@@ -206,9 +206,9 @@ export const BatchImageList: React.FC<BatchImageListProps> = ({
                 </div>
               </div>
             ) : item.status === 'error' ? (
-              <div className="aspect-square sm:aspect-[4/3] bg-rose-50/60 rounded-xl border border-rose-200 p-5 flex flex-col items-center justify-center text-center gap-3">
-                <AlertTriangle className="w-8 h-8 text-rose-500" />
-                <p className="text-[15px] text-rose-700 font-medium">
+              <div className="aspect-square sm:aspect-[4/3] bg-red-50/60 rounded-xl border border-red-200 p-5 flex flex-col items-center justify-center text-center gap-3">
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+                <p className="text-[15px] text-red-700 font-medium">
                   {item.errorMessage || 'ไม่สามารถสร้างภาพได้ กรุณาตรวจสอบการเชื่อมต่อ'}
                 </p>
                 <button
@@ -284,7 +284,7 @@ export const BatchImageList: React.FC<BatchImageListProps> = ({
                 <button
                   type="button"
                   onClick={() => onRemoveSingle(item.id)}
-                  className="p-2 rounded-lg text-muted hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                  className="p-2 rounded-lg text-muted hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer"
                   title="ลบภาพนี้"
                 >
                   <Trash2 className="w-4 h-4" />
