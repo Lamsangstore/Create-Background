@@ -51,9 +51,9 @@ export const Header: React.FC<HeaderProps> = ({
           <div className={`inline-flex h-8 px-3.5 items-center rounded-full text-[15px] font-bold uppercase tracking-widest border gap-2 ${
             hasApiKey
               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : 'bg-rose-50 text-rose-700 border-rose-200'
+              : 'bg-red-50 text-red-700 border-red-200'
           }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${hasApiKey ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${hasApiKey ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`} />
             {hasApiKey ? 'พร้อมใช้งาน (READY)' : 'ไม่พบ API KEY (NO KEY)'}
           </div>
         </div>

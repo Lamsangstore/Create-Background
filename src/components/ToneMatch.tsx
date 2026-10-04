@@ -315,7 +315,7 @@ export const ToneMatch: React.FC<ToneMatchProps> = ({ completedItems, onToast })
         <div className="flex flex-wrap items-center gap-4">
           <div
             className="w-24 h-24 rounded-2xl border border-line shrink-0 shadow-studio"
-            style={{ background: targetHex, boxShadow: 'inset 0 0 0 6px #fff, var(--tw-shadow, 0 12px 32px -16px rgba(28,25,23,.16))' }}
+            style={{ background: targetHex, boxShadow: 'inset 0 0 0 6px #fff, var(--tw-shadow, 0 12px 32px -16px rgba(15,23,42,.16))' }}
             title={targetHex}
           />
           <div className="flex-1 min-w-[260px] space-y-3">
@@ -429,7 +429,7 @@ export const ToneMatch: React.FC<ToneMatchProps> = ({ completedItems, onToast })
                     <button
                       type="button"
                       onClick={() => removeItem(it.id)}
-                      className="p-2 rounded-lg text-muted hover:text-rose-600 hover:bg-rose-50 border border-line hover:border-rose-200 transition-colors cursor-pointer"
+                      className="p-2 rounded-lg text-muted hover:text-red-600 hover:bg-red-50 border border-line hover:border-red-200 transition-colors cursor-pointer"
                       title="ลบรูปนี้"
                     >
                       <X className="w-4 h-4" />

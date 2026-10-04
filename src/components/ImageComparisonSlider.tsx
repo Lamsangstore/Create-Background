@@ -75,7 +75,7 @@ export const ImageComparisonSlider: React.FC<ImageComparisonSliderProps> = ({
 
         {/* Divider Bar */}
         <div
-          className="absolute top-0 bottom-0 w-0.5 bg-gold shadow-[0_0_12px_rgba(199,154,91,0.7)] z-10"
+          className="absolute top-0 bottom-0 w-0.5 bg-gold shadow-[0_0_12px_rgba(168,133,63,0.7)] z-10"
           style={{ left: `${sliderPosition}%` }}
         >
           <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-gold text-white shadow-lg border-2 border-white flex items-center justify-center">
